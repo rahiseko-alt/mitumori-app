@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>開発見積ナビ</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="app-header">
+    <div>
+      <p class="eyebrow">非エンジニア向け・商談支援</p>
+      <h1>開発見積ナビ</h1>
+      <p class="subtitle">初回は「何を実現したいか」を聞き、2回目以降はチェックだけで見積を調整できます。</p>
+    </div>
+    <div class="header-fields">
+      <label>
+        <span>案件名</span>
+        <input id="project-name" type="text" value="新規システム" maxlength="80">
+      </label>
+      <label>
+        <span>依頼先</span>
+        <output class="fixed-field">中小規模システム会社</output>
+      </label>
+    </div>
+  </header>
+
+  <nav class="page-nav" aria-label="商談フェーズ">
+    <button type="button" data-page="interview" aria-selected="true">
+      <span>1ページ目</span><strong>初回ヒアリング</strong><small>初回商談で使う</small>
+    </button>
+    <button type="button" data-page="estimate" aria-selected="false">
+      <span>2ページ目</span><strong>やりたいこと別見積</strong><small>2回目以降で使う</small>
+    </button>
+  </nav>
+
+  <main>
+    <section id="page-interview" class="page-panel is-active" aria-labelledby="interview-heading">
+      <div class="phase-intro">
+        <div>
+          <p class="step">1ページ目・初回商談</p>
+          <h2 id="interview-heading">お客様が実現したいことを聞く</h2>
+          <p>誰が、どこで、何をしたいかを順に確認します。回答から、実現に必要な作業と費用を自動で整理します。</p>
+        </div>
+        <button id="clear-answers" type="button" class="secondary">回答をクリア</button>
+      </div>
+
+      <section class="interview-preview" aria-live="polite">
+        <div><span>見積に入りそうな項目</span><strong id="interview-count">0件</strong></div>
+        <div><span>現時点の概算</span><strong id="interview-cost">￥0</strong></div>
+        <p id="interview-note">回答すると自動で更新されます。</p>
+      </section>
+
+      <section class="preset-block">
+        <h3>近いシステムから始める</h3>
+        <p>商談の入口です。後で見積項目を一つずつ変更できます。</p>
+        <div id="preset-buttons" class="preset-buttons"></div>
+      </section>
+
+      <div id="questions" class="question-list"></div>
+
+      <div class="next-page-bar">
+        <div><strong>初回ヒアリングが終わったら</strong><span>必要になりそうな作業と金額を確認し、2回目の商談用見積へ進みます。</span></div>
+        <button id="go-estimate" type="button" class="primary">やりたいこと別見積を開く →</button>
+      </div>
+    </section>
+
+    <section id="page-estimate" class="page-panel" aria-labelledby="estimate-heading" hidden>
+      <div class="phase-intro">
+        <div>
+          <p class="step">2ページ目・2回目以降の商談</p>
+          <h2 id="estimate-heading">やりたいことをチェックして見積を詰める</h2>
+          <p>チェックの変更はその場で金額へ反映されます。上のまとまりを外すと、その下の項目もまとめて外れます。</p>
+        </div>
+        <div class="action-row">
+          <button id="export-json" type="button" class="secondary">案件保存</button>
+          <button id="export-csv" type="button" class="secondary">明細CSV</button>
+          <button id="import-json" type="button" class="secondary">読込</button>
+          <button id="print-estimate" type="button" class="primary">印刷・PDF</button>
+          <input id="import-file" type="file" accept="application/json" hidden>
+        </div>
+      </div>
+
+      <section class="summary-grid" aria-label="見積概要" aria-live="polite">
+        <article><span>見積に含む項目</span><strong id="summary-count">0件</strong><small id="summary-count-detail">選択0・一緒に必要0</small></article>
+        <article><span>合計作業時間</span><strong id="summary-hours">0時間</strong><small id="summary-months">1人換算 0か月分</small></article>
+        <article><span>概算費用</span><strong id="summary-cost">￥0</strong><small id="summary-contingency">予備費を含む</small></article>
+        <article><span>想定期間</span><strong id="summary-duration">0か月</strong><small id="summary-team">体制換算</small></article>
+      </section>
+
+      <section id="impact-panel" class="impact-panel" aria-live="polite">
+        <strong>やりたいことのチェックを変更してください。</strong>
+        <span>追加・削減される金額と、一緒に必要になる作業を表示します。</span>
+      </section>
+
+      <section class="tree-guide">
+        <div><span class="tree-symbol selectable">✓</span><strong>選べる項目</strong><small>チェックで見積へ追加・解除</small></div>
+        <div><span class="tree-symbol locked">🔒</span><strong>一緒に必要</strong><small>選んだ項目に必要な間は自動で残る</small></div>
+        <div><span class="tree-symbol shared">●</span><strong>他でも使用</strong><small>複数箇所で使っても一度だけ計上</small></div>
+      </section>
+
+      <div class="feature-toolbar">
+        <label><span>やりたいことを検索</span><input id="feature-search" type="search" placeholder="例：写真、承認、PDF"></label>
+        <label class="toggle-label"><input id="selected-only" type="checkbox"><span>選択中だけ表示</span></label>
+        <button id="open-custom-dialog" type="button" class="primary">この案件だけの項目を追加</button>
+      </div>
+
+      <div class="estimate-workspace">
+        <section class="function-tree-panel" aria-labelledby="function-tree-heading">
+          <div class="panel-heading">
+            <div><p class="step">チェック操作</p><h3 id="function-tree-heading">やりたいこと別見積ツリー</h3></div>
+            <small>大きなまとまり → 個別項目</small>
+          </div>
+          <div id="feature-tree" class="feature-tree"></div>
+        </section>
+
+        <aside class="dependency-inspector" aria-labelledby="dependency-heading">
+          <div class="panel-heading">
+            <div><p class="step">自動で追加</p><h3 id="dependency-heading">一緒に必要になる準備</h3></div>
+          </div>
+          <p id="dependency-help">上の項目名を押すと、実現するために一緒に必要になる準備を表示します。</p>
+          <div id="dependency-tree" class="dependency-tree"></div>
+          <div id="reverse-dependencies" class="reverse-dependencies"></div>
+        </aside>
+      </div>
+
+      <details class="estimate-details">
+        <summary>作業別の時間・単価・明細を確認する</summary>
+        <div class="estimate-settings">
+          <label><span>追加修正に備える余裕</span><div class="range-line"><input id="contingency" type="range" min="0" max="40" step="5"><output id="contingency-value">15%</output></div></label>
+          <label><span>1人が1か月に作業する時間</span><input id="hours-per-month" type="number" min="80" max="200" step="10" value="160"></label>
+        </div>
+
+        <h3>作業別の時間と費用</h3>
+        <div class="table-wrap"><table id="role-table"><thead><tr><th>作業</th><th>1時間単価（固定）</th><th>時間</th><th>1人換算月</th><th>費用</th></tr></thead><tbody></tbody></table></div>
+
+        <h3>やりたいこと別の明細</h3>
+        <div class="table-wrap"><table id="feature-table"><thead><tr><th>項目番号</th><th>状態</th><th>やりたいことの分類</th><th>見積項目</th><th>技術名</th><th>作業時間</th><th>単体価格目安</th></tr></thead><tbody></tbody></table></div>
+      </details>
+
+      <label class="notes-field"><span>前提・除外事項・ヒアリングメモ</span><textarea id="project-notes" rows="6" placeholder="例：帳票は1種類。既存データ移行と外部サービス利用料は別途。"></textarea></label>
+    </section>
+  </main>
+
+  <footer>
+    <button id="reset-project" type="button" class="danger">案件を初期化</button>
+    <p>作業時間と1時間あたりの金額は比較用の初期値です。正式見積では、作る範囲、現在使っている資料、必要な確認の程度、扱う情報量を確認してください。</p>
+  </footer>
+
+  <dialog id="custom-dialog">
+    <form id="custom-feature-form" method="dialog">
+      <div class="dialog-heading">
+        <div><p class="step">この案件だけ</p><h2>見積項目を追加する</h2></div>
+        <button type="button" id="close-custom-dialog" class="icon-button" aria-label="閉じる">×</button>
+      </div>
+      <div class="custom-grid">
+        <label><span>やりたいこと</span><input id="custom-name" required maxlength="80" placeholder="例：現場ごとに独自の点検表を作りたい"></label>
+        <label><span>分類</span><select id="custom-layer"></select></label>
+        <label class="wide"><span>説明</span><textarea id="custom-description" rows="2" maxlength="240"></textarea></label>
+      </div>
+      <fieldset><legend>この項目にかかる作業時間（担当ごと）</legend><div id="custom-hours" class="hours-grid"></div></fieldset>
+      <fieldset>
+        <legend>一緒に必要になる項目</legend>
+        <input id="custom-dependency-search" type="search" placeholder="項目名を検索">
+        <div id="custom-dependencies" class="dependency-picker"></div>
+      </fieldset>
+      <p id="custom-error" class="error-text" role="alert"></p>
+      <div class="dialog-actions"><button type="button" id="cancel-custom" class="secondary">キャンセル</button><button type="submit" class="primary">追加して選択</button></div>
+    </form>
+  </dialog>
+
+  <script src="engine.js"></script>
+  <script src="catalog.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
