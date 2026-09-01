@@ -6,6 +6,7 @@ const path = require("node:path");
 const root = path.resolve(__dirname, "..");
 const app = fs.readFileSync(path.join(root, "app.js"), "utf8");
 const html = fs.readFileSync(path.join(root, "index.html"), "utf8");
+const styles = fs.readFileSync(path.join(root, "styles.css"), "utf8");
 
 test("自動保存は明示同意がない限り復元・保存しない", () => {
   assert.match(html, /id="auto-save"/);
@@ -42,4 +43,14 @@ test("ページナビと明細表に支援技術向け構造がある", () => {
   assert.equal((html.match(/role="tab"/g) || []).length, 2);
   assert.equal((html.match(/role="tabpanel"/g) || []).length, 2);
   assert.equal((html.match(/<caption class="sr-only">/g) || []).length, 2);
+});
+
+test("2ページ目の合計金額は追従バーにも同期される", () => {
+  assert.match(html, /class="estimate-sticky-total"/);
+  assert.match(html, /id="sticky-summary-cost"/);
+  assert.match(html, /id="sticky-summary-count"/);
+  assert.match(app, /el\("sticky-summary-cost"\)\.textContent = money\.format\(estimate\.totalCost\)/);
+  assert.match(app, /el\("sticky-summary-count"\)\.textContent/);
+  assert.match(styles, /\.estimate-sticky-total\s*\{[^}]*position:\s*sticky/s);
+  assert.match(styles, /@media print[\s\S]*\.estimate-sticky-total/);
 });

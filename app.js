@@ -320,6 +320,9 @@
     el("summary-months").textContent = `1人換算 ${number.format(estimate.baseHours / state.hoursPerMonth)}か月分`;
     el("summary-cost").textContent = money.format(estimate.totalCost);
     el("summary-price-note").textContent = `原本単価${masterCount}件・査定単価${assessedCount}件／保守目安 ${money.format(maintenanceEstimate())}は別途`;
+    el("sticky-summary-cost").textContent = money.format(estimate.totalCost);
+    el("sticky-summary-count").textContent = `${selection.selected.size}項目（選択${selection.direct.size}・自動${selection.automatic.size}）`;
+    el("sticky-summary-note").textContent = `参考概算・消費税別／保守目安 ${money.format(maintenanceEstimate())}は別途`;
     el("summary-duration").textContent = `${durationMonths(estimate.baseHours)}か月`;
     el("summary-team").textContent = "中小規模システム会社・平均3～4名で並行";
 
