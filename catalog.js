@@ -143,6 +143,61 @@
     f("support-operation", "management", "保守・問い合わせ運用", "問い合わせ、障害、改善要望、定期点検の流れを整えます。", h(16, 0, 8, 8, 4, 8, 16, 32), ["monitoring", "documentation-training"], ["保守"]),
   ];
 
+  // DATABANK「価格表 機能別マスタ」（作成日 2026-06-29）との対応表。
+  // 明確に対応しない既存項目は、推測で価格を付けず仮0円とする。
+  const priceMasterMeta = {
+    name: "価格表 機能別マスタ",
+    createdAt: "2026-06-29",
+    maintenanceRate: 10,
+  };
+
+  const priceMasterByFeature = {
+    requirements: { priceSize: "S", fixedPrice: 50000, priceSourceName: "企画・要件定義" },
+    "information-architecture": { priceSize: "S", fixedPrice: 40000, priceSourceName: "情報設計（IA）" },
+    wireframes: { priceSize: "S", fixedPrice: 50000, priceSourceName: "ワイヤーフレーム" },
+    "design-system": { priceSize: "M", fixedPrice: 100000, priceSourceName: "デザインシステム" },
+    "responsive-shell": { priceSize: "M", fixedPrice: 80000, priceSourceName: "レスポンシブ対応" },
+    "theme-ui": { priceSize: "S", fixedPrice: 50000, priceSourceName: "ダークモード対応" },
+    "accessibility-ui": { priceSize: "M", fixedPrice: 70000, priceSourceName: "アクセシビリティ対応" },
+    "i18n-ui": { priceSize: "M", fixedPrice: 100000, priceSourceName: "多言語UI対応" },
+    "list-detail-ui": { priceSize: "S", fixedPrice: 60000, priceSourceName: "情報表示・一覧" },
+    "notification-center": { priceSize: "S", fixedPrice: 40000, priceSourceName: "お知らせ配信" },
+    "form-ui": { priceSize: "S", fixedPrice: 40000, priceSourceName: "お問い合わせフォーム" },
+    "email-login": { priceSize: "M", fixedPrice: 120000, priceSourceName: "会員登録・ログイン" },
+    "social-login": { priceSize: "M", fixedPrice: 80000, priceSourceName: "SNSログイン連携" },
+    "db-foundation": { priceSize: "M", fixedPrice: 150000, priceSourceName: "データベース連携" },
+    "advanced-search-ui": { priceSize: "M", fixedPrice: 100000, priceSourceName: "検索・絞り込み" },
+    "customer-portal-ui": { priceSize: "M", fixedPrice: 100000, priceSourceName: "マイページ・プロフィール" },
+    "payment-integration": { priceSize: "M", fixedPrice: 200000, priceSourceName: "決済機能" },
+    subscription: { priceSize: "M", fixedPrice: 250000, priceSourceName: "サブスク課金" },
+    "booking-flow": { priceSize: "M", fixedPrice: 200000, priceSourceName: "予約・注文フロー" },
+    "push-notification": { priceSize: "M", fixedPrice: 80000, priceSourceName: "プッシュ通知" },
+    "admin-ui": { priceSize: "M", fixedPrice: 250000, priceSourceName: "管理画面（運営用）" },
+    "image-upload": { priceSize: "M", fixedPrice: 100000, priceSourceName: "画像添付" },
+    "video-upload": { priceSize: "L", fixedPrice: 180000, priceSourceName: "動画添付" },
+    "import-export": { priceSize: "M", fixedPrice: 80000, priceSourceName: "ダウンロード（CSV）" },
+    "pdf-generator": { priceSize: "M", fixedPrice: 120000, priceSourceName: "ダウンロード（PDF）" },
+    geolocation: { priceSize: "L", fixedPrice: 250000, priceSourceName: "位置情報連携" },
+    "role-permissions": { priceSize: "L", fixedPrice: 200000, priceSourceName: "複雑な権限管理" },
+    "external-api": { priceSize: "L", fixedPrice: 300000, priceSourceName: "外部システム多数連携" },
+    "native-app": { priceSize: "M×2", fixedPrice: 300000, priceSourceName: "iOS対応＋Android対応" },
+    pwa: { priceSize: "M", fixedPrice: 120000, priceSourceName: "Webアプリ対応（PWA）" },
+    "security-baseline": { priceSize: "M", fixedPrice: 150000, priceSourceName: "セキュリティ対策" },
+    "web-deploy": { priceSize: "M", fixedPrice: 150000, priceSourceName: "インフラ構築" },
+    "qa-baseline": { priceSize: "M", fixedPrice: 120000, priceSourceName: "テスト・QA" },
+    "release-management": { priceSize: "S", fixedPrice: 50000, priceSourceName: "ストア申請・公開対応" },
+  };
+
+  features.forEach((feature) => {
+    Object.assign(feature, priceMasterByFeature[feature.id] || {
+      priceSize: "—",
+      fixedPrice: 0,
+      priceSourceName: "該当なし（仮0円）",
+      priceStatus: "temporary",
+    });
+    if (!feature.priceStatus) feature.priceStatus = "master";
+  });
+
   const plainLayers = {
     planning: "何を作るか決める", frontend: "利用者が見る・入力する", backend: "仕事の流れや計算を動かす",
     data: "情報を保存・探す", security: "安全にログイン・使い分ける", mobile: "現場やスマホで使う",
@@ -327,8 +382,8 @@
   const rateProfiles = {
     company: {
       name: "中小規模システム会社",
-      contingency: 15,
-      rates: { planning: 7000, design: 7000, frontend: 7000, backend: 7000, data: 7000, infra: 7000, qa: 7000, pm: 7000 },
+      contingency: 0,
+      rates: { planning: 0, design: 0, frontend: 0, backend: 0, data: 0, infra: 0, qa: 0, pm: 0 },
     },
   };
 
@@ -382,5 +437,5 @@
     ] },
   ];
 
-  return { layers, plainLayers, plainNames, roles, features, questions, presets, rateProfiles, featureHierarchy };
+  return { layers, plainLayers, plainNames, roles, features, questions, presets, rateProfiles, featureHierarchy, priceMasterMeta };
 });

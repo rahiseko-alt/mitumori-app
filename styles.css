@@ -240,7 +240,7 @@ h3 { margin: 28px 0 10px; font-size: 18px; }
 .reverse-item strong { display: block; }
 .reverse-item span { color: var(--muted); font-size: 13px; }
 
-.estimate-settings { grid-template-columns: 2fr 1fr; margin-bottom: 28px; }
+.estimate-settings { grid-template-columns: minmax(240px, 420px); margin-bottom: 28px; }
 .range-line { display: flex; align-items: center; gap: 12px; }
 .range-line output { min-width: 46px; font-weight: 700; font-variant-numeric: tabular-nums; }
 .table-wrap { overflow-x: auto; }
@@ -491,6 +491,8 @@ legend { padding: 0 6px; font-weight: 700; }
 .feature-price { display: grid; min-width: 150px; justify-items: end; font-variant-numeric: tabular-nums; }
 .feature-price strong { font-size: 16px; }
 .feature-price small { color: var(--muted); }
+.feature-price.is-temporary strong { color: var(--amber); }
+.feature-price.is-temporary small { color: #704b0b; }
 .delta { margin-top: 3px; padding: 2px 7px; border-radius: 999px; font-size: 12px; font-weight: 700; }
 .delta.add { color: var(--primary-dark); background: var(--primary-soft); }
 .delta.remove { color: var(--danger); background: var(--danger-soft); }
@@ -500,6 +502,9 @@ legend { padding: 0 6px; font-weight: 700; }
 .feature-node.is-locked .node-check input { opacity: 1; accent-color: var(--primary); }
 .check-lock { display: inline-flex; align-items: center; justify-content: center; width: 16px; font-size: 12px; line-height: 1; }
 .locked-badge { color: #164967; background: var(--blue-soft); }
+.badge.price-master { color: var(--primary-dark); background: var(--primary-soft); }
+.badge.price-temporary { color: #704b0b; background: var(--amber-soft); }
+.temporary-price-row { background: var(--amber-soft); }
 
 .dependency-inspector { position: static; overflow: hidden; }
 #dependency-help { margin: 14px 16px 8px; color: var(--muted); }

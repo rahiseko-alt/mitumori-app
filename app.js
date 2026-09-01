@@ -5,7 +5,6 @@
   const Catalog = window.EstimateCatalog;
   const STORAGE_KEY = "development-estimate-navigator-v2";
   const STORAGE_CONSENT_KEY = "development-estimate-navigator-autosave-consent";
-  const FIXED_HOURLY_RATE = 7000;
   const ESTIMATE_TEAM_SIZE = 3.25;
   const money = new Intl.NumberFormat("ja-JP", { style: "currency", currency: "JPY", maximumFractionDigits: 0 });
   const number = new Intl.NumberFormat("ja-JP", { maximumFractionDigits: 1 });
@@ -57,6 +56,18 @@
     });
   };
 
+  const normalizeCustomFeatures = (items) => (Array.isArray(items) ? items : []).map((feature) => {
+    const hasFixedPrice = Object.prototype.hasOwnProperty.call(feature, "fixedPrice");
+    const fixedPrice = hasFixedPrice ? Math.max(0, Number(feature.fixedPrice || 0)) : 0;
+    return {
+      ...feature,
+      fixedPrice,
+      priceSize: feature.priceSize || "—",
+      priceSourceName: feature.priceSourceName || (fixedPrice > 0 ? "案件固有（手入力）" : "該当なし（仮0円）"),
+      priceStatus: feature.priceStatus || (fixedPrice > 0 ? "manual" : "temporary"),
+    };
+  });
+
   function loadState() {
     try {
       if (localStorage.getItem(STORAGE_CONSENT_KEY) !== "true") {
@@ -72,7 +83,7 @@
         manual: Array.isArray(saved.manual) ? saved.manual : base.manual,
         answers: Array.isArray(saved.answers) ? saved.answers : [],
         excluded: Array.isArray(saved.excluded) ? saved.excluded : [],
-        customFeatures: Array.isArray(saved.customFeatures) ? saved.customFeatures : [],
+        customFeatures: normalizeCustomFeatures(saved.customFeatures),
         profileRates: base.profileRates,
         contingencies: { company: Number(saved.contingencies?.company ?? base.contingencies.company) },
         profile: "company",
@@ -171,20 +182,25 @@
     return Catalog.rateProfiles.company.rates;
   }
 
-  function currentContingency() {
-    return Number(state.contingencies.company || 0);
-  }
-
   function compute(ids = directIds()) {
     const result = Engine.computeSelection(allFeatures(), ids);
-    const value = Engine.calculateEstimate(allFeatures(), result.selected, currentRates(), currentContingency());
+    const value = Engine.calculateEstimate(allFeatures(), result.selected, currentRates(), 0);
     return { selection: result, estimate: value };
   }
 
   function directFeatureMetrics(feature) {
     const hours = Engine.ROLES.reduce((sum, role) => sum + Number(feature.hours?.[role] || 0), 0);
-    const cost = Engine.ROLES.reduce((sum, role) => sum + Number(feature.hours?.[role] || 0) * Number(currentRates()[role] || 0), 0);
+    const calculatedCost = Engine.ROLES.reduce((sum, role) => sum + Number(feature.hours?.[role] || 0) * Number(currentRates()[role] || 0), 0);
+    const cost = Object.prototype.hasOwnProperty.call(feature, "fixedPrice") ? Math.max(0, Number(feature.fixedPrice || 0)) : calculatedCost;
     return { hours, cost };
+  }
+
+  function isTemporaryPrice(feature) {
+    return feature?.priceStatus === "temporary";
+  }
+
+  function maintenanceEstimate() {
+    return Math.round(estimate.totalCost * Number(Catalog.priceMasterMeta?.maintenanceRate || 10) / 100);
   }
 
   function durationMonths(hours) {
@@ -277,12 +293,15 @@
   }
 
   function renderSummary() {
+    const temporaryCount = [...selection.selected].filter((id) => isTemporaryPrice(featureMap().get(id))).length;
     el("summary-count").textContent = `${selection.selected.size}件`;
     el("summary-count-detail").textContent = `自分で選択${selection.direct.size}・一緒に必要${selection.automatic.size}`;
     el("summary-hours").textContent = `${number.format(estimate.baseHours)}時間`;
     el("summary-months").textContent = `1人換算 ${number.format(estimate.baseHours / state.hoursPerMonth)}か月分`;
     el("summary-cost").textContent = money.format(estimate.totalCost);
-    el("summary-contingency").textContent = `予備費${currentContingency()}%を含む・消費税別`;
+    el("summary-price-note").textContent = temporaryCount
+      ? `固定単価合計・仮0円 ${temporaryCount}件を含む`
+      : `固定単価合計・年間保守目安 ${money.format(maintenanceEstimate())}は別途`;
     el("summary-duration").textContent = `${durationMonths(estimate.baseHours)}か月`;
     el("summary-team").textContent = "中小規模システム会社・平均3～4名で並行";
   }
@@ -339,7 +358,7 @@
     const direct = directIds();
     const features = allFeatures();
     const visible = features.filter((feature) => {
-      const haystack = `${displayName(feature)} ${feature.name} ${feature.description} ${(feature.tags || []).join(" ")}`.toLowerCase();
+      const haystack = `${displayName(feature)} ${feature.name} ${feature.description} ${feature.priceSourceName || ""} ${feature.priceSize || ""} ${(feature.tags || []).join(" ")}`.toLowerCase();
       return (!query || haystack.includes(query)) && (!selectedOnly || selection.selected.has(feature.id));
     });
 
@@ -372,6 +391,7 @@
           const locked = selected && (!isDirect || parents.length > 0);
           const source = featureSource(feature.id);
           const directCost = directFeatureMetrics(feature).cost;
+          const temporaryPrice = isTemporaryPrice(feature);
           const delta = incrementalCost(feature.id);
           const deltaText = delta.mode === "add" ? `枝ごと追加 +${money.format(delta.amount)}`
             : delta.mode === "remove"
@@ -390,13 +410,14 @@
                 <span class="feature-title-line"><span class="item-number">#${itemNumber(feature)}</span> <span class="feature-name">${escapeHtml(label)}</span></span>
                 ${technicalName(feature) ? `<span class="technical-name">技術名：${escapeHtml(technicalName(feature))}</span>` : ""}
               </button>
-              <div class="feature-price">
-                <strong>${money.format(directCost)}</strong><small>項目自体・消費税別</small>
+              <div class="feature-price ${temporaryPrice ? "is-temporary" : ""}">
+                <strong>${money.format(directCost)}${temporaryPrice ? "（仮）" : ""}</strong><small>${temporaryPrice ? "価格表に該当なし・要確認" : `${escapeHtml(feature.priceSourceName)}・税別`}</small>
                 <span class="delta ${delta.mode}">${deltaText}</span>
               </div>
             </div>
             <div class="feature-badges">
               ${source ? `<span class="badge ${source.className}">${escapeHtml(source.label)}</span>` : ""}
+              <span class="badge ${temporaryPrice ? "price-temporary" : "price-master"}">${temporaryPrice ? "仮0円" : `規模 ${escapeHtml(feature.priceSize)}`}</span>
               <span class="badge">${number.format(Engine.ROLES.reduce((sum, role) => sum + Number(feature.hours?.[role] || 0), 0))}時間</span>
               ${(feature.dependencies || []).length ? `<span class="badge locked-badge">🔒 一緒に必要 ${feature.dependencies.length}件</span>` : `<span class="badge">この項目だけ</span>`}
               ${isCustom ? `<button type="button" class="custom-delete" data-delete-custom="${feature.id}">追加項目を削除</button>` : ""}
@@ -430,13 +451,14 @@
     const dependents = Engine.reverseDependents(allFeatures(), selection.selected, node.id);
     const shared = dependents.length > 1;
     const directCost = directFeatureMetrics(feature).cost;
+    const temporaryPrice = isTemporaryPrice(feature);
     return `<li class="dependency-node ${locked ? "is-locked" : ""}">
       <div class="dependency-row">
         <label>
           <input type="checkbox" data-tree-toggle="${node.id}" data-locked="${locked}" aria-label="${escapeHtml(displayName(feature))}を見積に含める" ${selected ? "checked" : ""} ${locked ? `aria-disabled="true" tabindex="-1"` : ""}>
           <span class="check-lock">${locked ? "🔒" : ""}</span>
         </label>
-        <div><strong><span class="item-number">#${itemNumber(feature)}</span> ${escapeHtml(displayName(feature))}</strong>${technicalName(feature) ? `<span class="technical-name">技術名：${escapeHtml(technicalName(feature))}</span>` : ""}<small>${escapeHtml(Catalog.plainLayers[feature.layer] || feature.layer)}・項目自体 ${money.format(directCost)}（税別）</small></div>
+        <div><strong><span class="item-number">#${itemNumber(feature)}</span> ${escapeHtml(displayName(feature))}</strong>${technicalName(feature) ? `<span class="technical-name">技術名：${escapeHtml(technicalName(feature))}</span>` : ""}<small>${escapeHtml(Catalog.plainLayers[feature.layer] || feature.layer)}・${temporaryPrice ? `${money.format(0)}（仮・要確認）` : `規模${escapeHtml(feature.priceSize)} ${money.format(directCost)}（税別）`}</small></div>
         ${shared ? `<span class="shared-badge">${itemNumbers(dependents)}でも使用</span>` : locked && parents.length ? `<span class="shared-badge">${itemNumbers(parents)}が使用中</span>` : ""}
       </div>
       ${node.children?.length ? `<ul>${node.children.map((child) => renderDependencyNode(child, depth + 1)).join("")}</ul>` : ""}
@@ -467,19 +489,14 @@
   }
 
   function renderEstimateDetails() {
-    el("contingency").value = currentContingency();
-    el("contingency-value").textContent = `${currentContingency()}%`;
     el("hours-per-month").value = state.hoursPerMonth;
     el("project-notes").value = state.notes;
 
     el("role-table").querySelector("tbody").innerHTML = Engine.ROLES.map((role) => {
       const hours = estimate.roleHours[role];
-      const cost = hours * FIXED_HOURLY_RATE;
-      return `<tr><td>${escapeHtml(Catalog.roles[role])}</td><td class="numeric">${money.format(FIXED_HOURLY_RATE)}</td><td class="numeric">${number.format(hours)}時間</td><td class="numeric">${number.format(hours / state.hoursPerMonth)}</td><td class="numeric">${money.format(cost)}</td></tr>`;
+      return `<tr><td>${escapeHtml(Catalog.roles[role])}</td><td class="numeric">${number.format(hours)}時間</td><td class="numeric">${number.format(hours / state.hoursPerMonth)}</td></tr>`;
     }).join("")
-      + `<tr class="total-row"><th>基本費用</th><th></th><th class="numeric">${number.format(estimate.baseHours)}時間</th><th class="numeric">${number.format(estimate.baseHours / state.hoursPerMonth)}</th><th class="numeric">${money.format(estimate.baseCost)}</th></tr>`
-      + `<tr class="total-row"><th>予備費 ${currentContingency()}%</th><th></th><th></th><th></th><th class="numeric">${money.format(estimate.contingencyCost)}</th></tr>`
-      + `<tr class="total-row"><th>概算合計（消費税別）</th><th></th><th></th><th></th><th class="numeric">${money.format(estimate.totalCost)}</th></tr>`;
+      + `<tr class="total-row"><th>参考工数合計</th><th class="numeric">${number.format(estimate.baseHours)}時間</th><th class="numeric">${number.format(estimate.baseHours / state.hoursPerMonth)}</th></tr>`;
 
     const map = featureMap();
     el("feature-table").querySelector("tbody").innerHTML = [...selection.selected]
@@ -488,10 +505,11 @@
       .map((feature) => {
         const source = featureSource(feature.id);
         const metrics = directFeatureMetrics(feature);
-        return `<tr><td>#${itemNumber(feature)}</td><td>${escapeHtml(source?.label || "一緒に必要")}</td><td>${escapeHtml(Catalog.plainLayers[feature.layer] || feature.layer)}</td><td>${escapeHtml(displayName(feature))}</td><td>${escapeHtml(technicalName(feature) || "—")}</td><td class="numeric">${number.format(metrics.hours)}時間</td><td class="numeric">${money.format(metrics.cost)}</td></tr>`;
+        const temporaryPrice = isTemporaryPrice(feature);
+        return `<tr class="${temporaryPrice ? "temporary-price-row" : ""}"><td>#${itemNumber(feature)}</td><td>${escapeHtml(source?.label || "一緒に必要")}</td><td>${escapeHtml(Catalog.plainLayers[feature.layer] || feature.layer)}</td><td>${escapeHtml(displayName(feature))}</td><td>${escapeHtml(feature.priceSourceName || "該当なし")}</td><td>${escapeHtml(feature.priceSize || "—")}</td><td class="numeric">${number.format(metrics.hours)}時間</td><td class="numeric">${money.format(metrics.cost)}${temporaryPrice ? "（仮）" : ""}</td></tr>`;
       }).join("") + (selection.selected.size
-        ? `<tr class="total-row"><th colspan="5">項目費用合計（予備費前・消費税別）</th><th class="numeric">${number.format(estimate.baseHours)}時間</th><th class="numeric">${money.format(estimate.baseCost)}</th></tr>`
-        : `<tr><td colspan="7">見積項目が選択されていません。</td></tr>`);
+        ? `<tr class="total-row"><th colspan="6">機能単価合計（消費税別）</th><th class="numeric">${number.format(estimate.baseHours)}時間</th><th class="numeric">${money.format(estimate.totalCost)}</th></tr><tr><th colspan="7">年間保守費目安（10%・別途）</th><th class="numeric">${money.format(maintenanceEstimate())}</th></tr>`
+        : `<tr><td colspan="8">見積項目が選択されていません。</td></tr>`);
 
     el("print-project-name").textContent = state.projectName || "—";
     el("print-customer-name").textContent = state.customerName || "—";
@@ -631,11 +649,18 @@
     const name = el("custom-name").value.trim();
     const description = el("custom-description").value.trim() || "この案件だけの追加項目です。";
     const layer = el("custom-layer").value;
+    const fixedPrice = Math.max(0, Number(el("custom-price").value || 0));
+    const priceSize = el("custom-price-size").value || "—";
     const hours = Object.fromEntries(Engine.ROLES.map((role) => [role, Number(document.querySelector(`[data-custom-hour="${role}"]`).value || 0)]));
     if (!name) { el("custom-error").textContent = "項目名を入力してください。"; return; }
-    if (Object.values(hours).reduce((sum, value) => sum + value, 0) <= 0) { el("custom-error").textContent = "いずれかの作業時間を1時間以上入力してください。"; return; }
     const id = `custom-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
-    state.customFeatures.push({ id, layer, name, plainName: name, description, hours, dependencies: [...customDependencyDraft], tags: ["独自"] });
+    state.customFeatures.push({
+      id, layer, name, plainName: name, description, hours,
+      dependencies: [...customDependencyDraft], tags: ["独自"],
+      fixedPrice, priceSize,
+      priceSourceName: fixedPrice > 0 ? "案件固有（手入力）" : "該当なし（仮0円）",
+      priceStatus: fixedPrice > 0 ? "manual" : "temporary",
+    });
     state.manual.push(id);
     state.excluded = state.excluded.filter((item) => item !== id);
     state.dependencyFocus = id;
@@ -666,7 +691,7 @@
   }
 
   function exportJson() {
-    download(`${state.projectName || "案件"}-estimate.json`, JSON.stringify({ version: 2, ...state }, null, 2), "application/json");
+    download(`${state.projectName || "案件"}-estimate.json`, JSON.stringify({ version: 3, ...state }, null, 2), "application/json");
   }
 
   function csvCell(value) {
@@ -683,23 +708,23 @@
       ["作成日", state.createdAt],
       ["有効期限", state.validUntil],
       ["金額区分", "参考概算・消費税別"],
+      ["価格マスタ", `${Catalog.priceMasterMeta.name}（${Catalog.priceMasterMeta.createdAt}）`],
       ["1人の月間作業時間", state.hoursPerMonth],
-      ["予備費率", `${currentContingency()}%`],
+      ["年間保守費目安", `機能単価合計の${Catalog.priceMasterMeta.maintenanceRate}%前後・別途`],
       ["前提・除外事項・ヒアリングメモ", state.notes || "未入力"],
       [],
-      ["項目番号", "状態", "やりたいことの分類", "見積項目", "技術名", "作業時間", "項目費用（依存重複なし・消費税別）"],
+      ["項目番号", "状態", "分類", "見積項目", "技術名", "価格表の対応項目", "規模", "価格状態", "参考工数", "固定単価（消費税別）"],
     ];
     [...selection.selected].forEach((id) => {
       const feature = map.get(id);
       if (!feature) return;
       const metrics = directFeatureMetrics(feature);
-      rows.push([itemNumber(feature), featureSource(id)?.label || "一緒に必要", Catalog.plainLayers[feature.layer] || feature.layer, displayName(feature), technicalName(feature), metrics.hours, metrics.cost]);
+      rows.push([itemNumber(feature), featureSource(id)?.label || "一緒に必要", Catalog.plainLayers[feature.layer] || feature.layer, displayName(feature), technicalName(feature), feature.priceSourceName, feature.priceSize, isTemporaryPrice(feature) ? "仮0円・要確認" : "価格マスタ", metrics.hours, metrics.cost]);
     });
     rows.push(
       [],
-      ["", "基本費用", "", "", "", estimate.baseHours, estimate.baseCost],
-      ["", `予備費 ${currentContingency()}%`, "", "", "", "", estimate.contingencyCost],
-      ["", "概算合計（消費税別）", "", "", "", "", estimate.totalCost],
+      ["", "機能単価合計（消費税別）", "", "", "", "", "", "", estimate.baseHours, estimate.totalCost],
+      ["", "年間保守費目安（10%・別途）", "", "", "", "", "", "", "", maintenanceEstimate()],
     );
     download(`${state.projectName || "案件"}-estimate.csv`, `\uFEFF${rows.map((row) => row.map(csvCell).join(",")).join("\r\n")}`, "text/csv;charset=utf-8");
   }
@@ -719,7 +744,7 @@
           manual: Array.isArray(parsed.manual) ? parsed.manual : [],
           answers: Array.isArray(parsed.answers) ? parsed.answers : [],
           excluded: Array.isArray(parsed.excluded) ? parsed.excluded : [],
-          customFeatures: Array.isArray(parsed.customFeatures) ? parsed.customFeatures : [],
+          customFeatures: normalizeCustomFeatures(parsed.customFeatures),
           profileRates: base.profileRates,
           contingencies: { company: Number(parsed.contingencies?.company ?? base.contingencies.company) },
           profile: "company",
@@ -810,7 +835,6 @@
         !state.autoSave,
       );
     });
-    el("contingency").addEventListener("input", (event) => { state.contingencies.company = Number(event.target.value); renderAll(); });
     el("hours-per-month").addEventListener("change", (event) => { state.hoursPerMonth = Math.max(80, Math.min(200, Number(event.target.value || 160))); renderAll(); });
     el("project-notes").addEventListener("change", (event) => { state.notes = event.target.value; saveState(); });
 

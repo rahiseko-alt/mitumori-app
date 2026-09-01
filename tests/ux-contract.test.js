@@ -15,10 +15,17 @@ test("自動保存は明示同意がない限り復元・保存しない", () =>
 });
 
 test("参考概算は消費税別と画面・CSV・印刷で明示する", () => {
-  assert.match(html, /概算費用（消費税別）/);
+  assert.match(html, /機能単価合計（消費税別）/);
   assert.match(html, /正式見積ではありません/);
   assert.match(app, /参考概算・消費税別/);
-  assert.match(app, /概算合計（消費税別）/);
+  assert.match(app, /機能単価合計（消費税別）/);
+});
+
+test("固定単価マスタと仮0円を画面・CSVで区別する", () => {
+  assert.match(html, /対応しない項目は仮0円/);
+  assert.match(app, /priceStatus === "temporary"/);
+  assert.match(app, /仮0円・要確認/);
+  assert.doesNotMatch(html, /id="contingency"/);
 });
 
 test("上書き・クリア・未回答遷移に確認がある", () => {

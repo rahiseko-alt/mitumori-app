@@ -124,19 +124,22 @@
       const feature = map.get(id);
       if (!feature) continue;
       let featureHours = 0;
-      let featureCost = 0;
+      let calculatedCost = 0;
       for (const role of ROLES) {
         const hours = Number(feature.hours?.[role] || 0);
         const rate = Number(rates[role] || 0);
         roleHours[role] += hours;
         featureHours += hours;
-        featureCost += hours * rate;
+        calculatedCost += hours * rate;
       }
+      const featureCost = Object.prototype.hasOwnProperty.call(feature, "fixedPrice")
+        ? Math.max(0, Number(feature.fixedPrice || 0))
+        : calculatedCost;
       featureRows.push({ id, hours: featureHours, cost: featureCost });
     }
 
     const baseHours = Object.values(roleHours).reduce((sum, value) => sum + value, 0);
-    const baseCost = ROLES.reduce((sum, role) => sum + roleHours[role] * Number(rates[role] || 0), 0);
+    const baseCost = featureRows.reduce((sum, row) => sum + row.cost, 0);
     const multiplier = 1 + Math.max(0, Number(contingencyPercent || 0)) / 100;
     return {
       roleHours,

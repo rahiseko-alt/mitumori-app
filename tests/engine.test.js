@@ -54,7 +54,7 @@ test("追加影響は新たに必要になる項目だけを返す", () => {
   assert.deepEqual(impact.added, ["screen-b"]);
 });
 
-test("担当別工数・原価・予備費を集計できる", () => {
+test("工数単価方式も互換計算できる", () => {
   const catalog = [feature("front", [], "frontend", 10), feature("back", [], "backend", 5)];
   const rates = { ...zero(), frontend: 8_000, backend: 10_000 };
   const result = Engine.calculateEstimate(catalog, ["front", "back"], rates, 20);
@@ -118,7 +118,28 @@ test("非エンジニア向け項目名が全96機能に設定されている", 
   assert.deepEqual(Catalog.features.filter((item) => technicalWords.test(item.plainName)), []);
 });
 
-test("中小規模システム会社向け7,000円の時間単価に固定されている", () => {
-  assert.deepEqual(Object.keys(Catalog.rateProfiles), ["company"]);
-  assert.deepEqual(new Set(Object.values(Catalog.rateProfiles.company.rates)), new Set([7000]));
+test("価格表対応項目は固定単価、非対応項目は仮0円である", () => {
+  const mapped = Catalog.features.filter((item) => item.priceStatus === "master");
+  const temporary = Catalog.features.filter((item) => item.priceStatus === "temporary");
+
+  assert.equal(mapped.length, 34);
+  assert.equal(temporary.length, 62);
+  assert.equal(Catalog.features.find((item) => item.id === "requirements").fixedPrice, 50_000);
+  assert.equal(Catalog.features.find((item) => item.id === "admin-ui").fixedPrice, 250_000);
+  assert.equal(Catalog.features.find((item) => item.id === "native-app").fixedPrice, 300_000);
+  assert.equal(Catalog.features.find((item) => item.id === "architecture").fixedPrice, 0);
+  assert.deepEqual(new Set(temporary.map((item) => item.fixedPrice)), new Set([0]));
+});
+
+test("固定単価がある場合は工数単価ではなく固定単価を合計する", () => {
+  const catalog = [
+    { ...feature("a", [], "frontend", 100), fixedPrice: 40_000 },
+    { ...feature("b", [], "backend", 100), fixedPrice: 0 },
+  ];
+  const rates = { ...zero(), frontend: 7_000, backend: 7_000 };
+  const result = Engine.calculateEstimate(catalog, ["a", "b"], rates, 0);
+
+  assert.equal(result.baseHours, 200);
+  assert.equal(result.baseCost, 40_000);
+  assert.equal(result.totalCost, 40_000);
 });
