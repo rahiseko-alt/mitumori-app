@@ -4,7 +4,9 @@
   const Engine = window.EstimateEngine;
   const Catalog = window.EstimateCatalog;
   const STORAGE_KEY = "development-estimate-navigator-v2";
+  const STORAGE_CONSENT_KEY = "development-estimate-navigator-autosave-consent";
   const FIXED_HOURLY_RATE = 7000;
+  const ESTIMATE_TEAM_SIZE = 3.25;
   const money = new Intl.NumberFormat("ja-JP", { style: "currency", currency: "JPY", maximumFractionDigits: 0 });
   const number = new Intl.NumberFormat("ja-JP", { maximumFractionDigits: 1 });
   const el = (id) => document.getElementById(id);
@@ -16,27 +18,51 @@
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
 
-  const defaultState = () => ({
-    projectName: "新規システム",
-    profile: "company",
-    manual: ["project-management"],
-    answers: [],
-    excluded: [],
-    customFeatures: [],
-    profileRates: {
-      company: clone(Catalog.rateProfiles.company.rates),
-    },
-    contingencies: {
-      company: Catalog.rateProfiles.company.contingency,
-    },
-    hoursPerMonth: 160,
-    notes: "",
-    activePage: "interview",
-    dependencyFocus: "project-management",
-  });
+  const localDate = (date = new Date()) => {
+    const offsetDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+    return offsetDate.toISOString().slice(0, 10);
+  };
+  const newEstimateNumber = () => {
+    const now = new Date();
+    const stamp = `${localDate(now).replaceAll("-", "")}-${String(now.getHours()).padStart(2, "0")}${String(now.getMinutes()).padStart(2, "0")}`;
+    return `EST-${stamp}`;
+  };
+  const defaultState = () => {
+    const created = new Date();
+    const validUntil = new Date(created);
+    validUntil.setDate(validUntil.getDate() + 30);
+    return ({
+      projectName: "新規システム",
+      customerName: "",
+      issuerName: "",
+      profile: "company",
+      manual: [],
+      answers: [],
+      excluded: [],
+      customFeatures: [],
+      profileRates: {
+        company: clone(Catalog.rateProfiles.company.rates),
+      },
+      contingencies: {
+        company: Catalog.rateProfiles.company.contingency,
+      },
+      hoursPerMonth: 160,
+      notes: "",
+      autoSave: false,
+      estimateNumber: newEstimateNumber(),
+      createdAt: localDate(created),
+      validUntil: localDate(validUntil),
+      activePage: "interview",
+      dependencyFocus: "project-management",
+    });
+  };
 
   function loadState() {
     try {
+      if (localStorage.getItem(STORAGE_CONSENT_KEY) !== "true") {
+        localStorage.removeItem(STORAGE_KEY);
+        return defaultState();
+      }
       const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
       if (!saved || typeof saved !== "object") return defaultState();
       const base = defaultState();
@@ -50,6 +76,7 @@
         profileRates: base.profileRates,
         contingencies: { company: Number(saved.contingencies?.company ?? base.contingencies.company) },
         profile: "company",
+        autoSave: true,
         activePage: saved.activePage === "estimate" ? "estimate" : "interview",
       };
     } catch {
@@ -96,7 +123,11 @@
   }
 
   function choiceEntries() {
-    return Catalog.questions.flatMap((question) => question.choices.map((choice) => ({
+    return Catalog.questions.flatMap((question) => [...question.choices, {
+      id: "none",
+      label: "該当なし・まだ不明",
+      features: [],
+    }].map((choice) => ({
       ...choice,
       key: `${question.id}:${choice.id}`,
       questionTitle: question.title,
@@ -123,7 +154,17 @@
   }
 
   function saveState() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    try {
+      if (state.autoSave) {
+        localStorage.setItem(STORAGE_CONSENT_KEY, "true");
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      } else {
+        localStorage.removeItem(STORAGE_CONSENT_KEY);
+        localStorage.removeItem(STORAGE_KEY);
+      }
+    } catch {
+      state.autoSave = false;
+    }
   }
 
   function currentRates() {
@@ -140,13 +181,19 @@
     return { selection: result, estimate: value };
   }
 
-  function ownEstimate(feature) {
-    return Engine.calculateEstimate(allFeatures(), [feature.id], currentRates(), currentContingency());
+  function directFeatureMetrics(feature) {
+    const hours = Engine.ROLES.reduce((sum, role) => sum + Number(feature.hours?.[role] || 0), 0);
+    const cost = Engine.ROLES.reduce((sum, role) => sum + Number(feature.hours?.[role] || 0) * Number(currentRates()[role] || 0), 0);
+    return { hours, cost };
   }
 
   function durationMonths(hours) {
-    if (!hours) return 0;
-    return Math.max(1, Math.ceil(hours / (160 * 3.25)));
+    return Engine.calculateDurationMonths(hours, state.hoursPerMonth, ESTIMATE_TEAM_SIZE);
+  }
+
+  function questionProgress() {
+    const answered = new Set(state.answers.map((key) => key.split(":")[0]));
+    return { answered: answered.size, total: Catalog.questions.length, unanswered: Math.max(0, Catalog.questions.length - answered.size) };
   }
 
   function names(ids, limit = 6) {
@@ -179,7 +226,9 @@
   function switchPage(page) {
     state.activePage = page === "estimate" ? "estimate" : "interview";
     document.querySelectorAll("[data-page]").forEach((button) => {
-      button.setAttribute("aria-selected", String(button.dataset.page === state.activePage));
+      const active = button.dataset.page === state.activePage;
+      button.setAttribute("aria-selected", String(active));
+      button.tabIndex = active ? 0 : -1;
     });
     ["interview", "estimate"].forEach((name) => {
       const panel = el(`page-${name}`);
@@ -193,7 +242,7 @@
 
   function renderPresets() {
     el("preset-buttons").innerHTML = Catalog.presets
-      .map((preset) => `<button type="button" data-preset="${preset.id}">${escapeHtml(preset.name)}</button>`)
+      .map((preset) => `<button type="button" data-preset="${preset.id}">${escapeHtml(preset.name)}に置き換え</button>`)
       .join("");
   }
 
@@ -205,7 +254,7 @@
         <div>
           <h3>${escapeHtml(question.title)}</h3>
           <p>${escapeHtml(question.help)}</p>
-          <div class="choice-grid">${question.choices.map((choice) => {
+          <div class="choice-grid">${[...question.choices, { id: "none", label: "該当なし・まだ不明" }].map((choice) => {
             const key = `${question.id}:${choice.id}`;
             return `<label><input type="checkbox" data-answer-key="${key}" ${answers.has(key) ? "checked" : ""}><span>${escapeHtml(choice.label)}</span></label>`;
           }).join("")}</div>
@@ -216,10 +265,15 @@
   function renderInterviewSummary() {
     el("interview-count").textContent = `${selection.selected.size}件`;
     el("interview-cost").textContent = money.format(estimate.totalCost);
-    const answerCount = state.answers.length;
+    const answerCount = state.answers.filter((key) => !key.endsWith(":none")).length;
+    const progress = questionProgress();
     el("interview-note").textContent = answerCount
-      ? `${answerCount}個の回答から候補を作成中。2ページ目で一つずつ調整できます。`
-      : "質問に回答すると、見積項目と概算が自動で更新されます。";
+      ? `${answerCount}個の該当回答から候補を作成中。${progress.answered}/${progress.total}問を確認済みです。`
+      : `該当項目を選ぶと自動更新されます。${progress.answered}/${progress.total}問を確認済みです。`;
+    el("interview-progress").textContent = progress.unanswered
+      ? `未確認が${progress.unanswered}問あります。各質問で該当項目または「該当なし・まだ不明」を選んでください。`
+      : "全質問を確認済みです。必要な作業と金額を確認して次へ進めます。";
+    el("go-estimate").classList.toggle("has-warning", progress.unanswered > 0);
   }
 
   function renderSummary() {
@@ -228,7 +282,7 @@
     el("summary-hours").textContent = `${number.format(estimate.baseHours)}時間`;
     el("summary-months").textContent = `1人換算 ${number.format(estimate.baseHours / state.hoursPerMonth)}か月分`;
     el("summary-cost").textContent = money.format(estimate.totalCost);
-    el("summary-contingency").textContent = `予備費${currentContingency()}%を含む`;
+    el("summary-contingency").textContent = `予備費${currentContingency()}%を含む・消費税別`;
     el("summary-duration").textContent = `${durationMonths(estimate.baseHours)}か月`;
     el("summary-team").textContent = "中小規模システム会社・平均3～4名で並行";
   }
@@ -317,7 +371,7 @@
           const parents = selectedParents(feature.id);
           const locked = selected && (!isDirect || parents.length > 0);
           const source = featureSource(feature.id);
-          const own = ownEstimate(feature).totalCost;
+          const directCost = directFeatureMetrics(feature).cost;
           const delta = incrementalCost(feature.id);
           const deltaText = delta.mode === "add" ? `枝ごと追加 +${money.format(delta.amount)}`
             : delta.mode === "remove"
@@ -337,7 +391,7 @@
                 ${technicalName(feature) ? `<span class="technical-name">技術名：${escapeHtml(technicalName(feature))}</span>` : ""}
               </button>
               <div class="feature-price">
-                <strong>${money.format(own)}</strong><small>この項目の単体目安</small>
+                <strong>${money.format(directCost)}</strong><small>項目自体・消費税別</small>
                 <span class="delta ${delta.mode}">${deltaText}</span>
               </div>
             </div>
@@ -359,8 +413,8 @@
       const ids = branchFeatureIds(input.dataset.branchToggle);
       const selectedCount = ids.filter((id) => selection.selected.has(id)).length;
       input.checked = ids.length > 0 && selectedCount === ids.length;
-      // 部分選択でも中間状態（-）は表示せず、操作をレ／空欄の2状態に限定する。
-      input.indeterminate = false;
+      input.indeterminate = selectedCount > 0 && selectedCount < ids.length;
+      input.setAttribute("aria-checked", input.indeterminate ? "mixed" : String(input.checked));
     });
   }
 
@@ -375,14 +429,14 @@
     const locked = selected && (!direct.has(node.id) || parents.length > 0);
     const dependents = Engine.reverseDependents(allFeatures(), selection.selected, node.id);
     const shared = dependents.length > 1;
-    const own = ownEstimate(feature).totalCost;
+    const directCost = directFeatureMetrics(feature).cost;
     return `<li class="dependency-node ${locked ? "is-locked" : ""}">
       <div class="dependency-row">
         <label>
           <input type="checkbox" data-tree-toggle="${node.id}" data-locked="${locked}" aria-label="${escapeHtml(displayName(feature))}を見積に含める" ${selected ? "checked" : ""} ${locked ? `aria-disabled="true" tabindex="-1"` : ""}>
           <span class="check-lock">${locked ? "🔒" : ""}</span>
         </label>
-        <div><strong><span class="item-number">#${itemNumber(feature)}</span> ${escapeHtml(displayName(feature))}</strong>${technicalName(feature) ? `<span class="technical-name">技術名：${escapeHtml(technicalName(feature))}</span>` : ""}<small>${escapeHtml(Catalog.plainLayers[feature.layer] || feature.layer)}・${money.format(own)}</small></div>
+        <div><strong><span class="item-number">#${itemNumber(feature)}</span> ${escapeHtml(displayName(feature))}</strong>${technicalName(feature) ? `<span class="technical-name">技術名：${escapeHtml(technicalName(feature))}</span>` : ""}<small>${escapeHtml(Catalog.plainLayers[feature.layer] || feature.layer)}・項目自体 ${money.format(directCost)}（税別）</small></div>
         ${shared ? `<span class="shared-badge">${itemNumbers(dependents)}でも使用</span>` : locked && parents.length ? `<span class="shared-badge">${itemNumbers(parents)}が使用中</span>` : ""}
       </div>
       ${node.children?.length ? `<ul>${node.children.map((child) => renderDependencyNode(child, depth + 1)).join("")}</ul>` : ""}
@@ -422,7 +476,10 @@
       const hours = estimate.roleHours[role];
       const cost = hours * FIXED_HOURLY_RATE;
       return `<tr><td>${escapeHtml(Catalog.roles[role])}</td><td class="numeric">${money.format(FIXED_HOURLY_RATE)}</td><td class="numeric">${number.format(hours)}時間</td><td class="numeric">${number.format(hours / state.hoursPerMonth)}</td><td class="numeric">${money.format(cost)}</td></tr>`;
-    }).join("") + `<tr class="total-row"><th>合計</th><th></th><th class="numeric">${number.format(estimate.baseHours)}時間</th><th class="numeric">${number.format(estimate.baseHours / state.hoursPerMonth)}</th><th class="numeric">${money.format(estimate.totalCost)}</th></tr>`;
+    }).join("")
+      + `<tr class="total-row"><th>基本費用</th><th></th><th class="numeric">${number.format(estimate.baseHours)}時間</th><th class="numeric">${number.format(estimate.baseHours / state.hoursPerMonth)}</th><th class="numeric">${money.format(estimate.baseCost)}</th></tr>`
+      + `<tr class="total-row"><th>予備費 ${currentContingency()}%</th><th></th><th></th><th></th><th class="numeric">${money.format(estimate.contingencyCost)}</th></tr>`
+      + `<tr class="total-row"><th>概算合計（消費税別）</th><th></th><th></th><th></th><th class="numeric">${money.format(estimate.totalCost)}</th></tr>`;
 
     const map = featureMap();
     el("feature-table").querySelector("tbody").innerHTML = [...selection.selected]
@@ -430,9 +487,19 @@
       .sort((a, b) => `${a.layer}${a.name}`.localeCompare(`${b.layer}${b.name}`, "ja"))
       .map((feature) => {
         const source = featureSource(feature.id);
-        const hours = Engine.ROLES.reduce((sum, role) => sum + Number(feature.hours?.[role] || 0), 0);
-        return `<tr><td>#${itemNumber(feature)}</td><td>${escapeHtml(source?.label || "一緒に必要")}</td><td>${escapeHtml(Catalog.plainLayers[feature.layer] || feature.layer)}</td><td>${escapeHtml(displayName(feature))}</td><td>${escapeHtml(technicalName(feature) || "—")}</td><td class="numeric">${number.format(hours)}時間</td><td class="numeric">${money.format(ownEstimate(feature).totalCost)}</td></tr>`;
-      }).join("") || `<tr><td colspan="7">見積項目が選択されていません。</td></tr>`;
+        const metrics = directFeatureMetrics(feature);
+        return `<tr><td>#${itemNumber(feature)}</td><td>${escapeHtml(source?.label || "一緒に必要")}</td><td>${escapeHtml(Catalog.plainLayers[feature.layer] || feature.layer)}</td><td>${escapeHtml(displayName(feature))}</td><td>${escapeHtml(technicalName(feature) || "—")}</td><td class="numeric">${number.format(metrics.hours)}時間</td><td class="numeric">${money.format(metrics.cost)}</td></tr>`;
+      }).join("") + (selection.selected.size
+        ? `<tr class="total-row"><th colspan="5">項目費用合計（予備費前・消費税別）</th><th class="numeric">${number.format(estimate.baseHours)}時間</th><th class="numeric">${money.format(estimate.baseCost)}</th></tr>`
+        : `<tr><td colspan="7">見積項目が選択されていません。</td></tr>`);
+
+    el("print-project-name").textContent = state.projectName || "—";
+    el("print-customer-name").textContent = state.customerName || "—";
+    el("print-issuer-name").textContent = state.issuerName || "—";
+    el("print-estimate-number").textContent = state.estimateNumber || "—";
+    el("print-created-at").textContent = state.createdAt || "—";
+    el("print-valid-until").textContent = state.validUntil || "—";
+    el("print-project-notes").textContent = state.notes || "記載なし";
   }
 
   function renderCustomHours() {
@@ -460,13 +527,24 @@
     renderDependencyInspector();
     renderEstimateDetails();
     el("project-name").value = state.projectName;
+    el("customer-name").value = state.customerName;
+    el("issuer-name").value = state.issuerName;
+    el("auto-save").checked = Boolean(state.autoSave);
     saveState();
   }
 
   function toggleAnswer(answerKey, checked) {
     const before = compute();
     const answers = new Set(state.answers);
-    checked ? answers.add(answerKey) : answers.delete(answerKey);
+    const questionId = answerKey.split(":")[0];
+    if (checked) {
+      [...answers].filter((key) => key.startsWith(`${questionId}:`)).forEach((key) => {
+        if (answerKey.endsWith(":none") || key.endsWith(":none")) answers.delete(key);
+      });
+      answers.add(answerKey);
+    } else {
+      answers.delete(answerKey);
+    }
     state.answers = [...answers];
     const choice = choiceEntries().find((item) => item.key === answerKey);
     if (checked && choice) {
@@ -476,6 +554,7 @@
     }
     const after = compute();
     describeChange(before, after, `${choice?.label || "回答"}を${checked ? "選択" : "解除"}`);
+    renderQuestions();
     renderAll();
   }
 
@@ -525,15 +604,16 @@
   function applyPreset(presetId) {
     const preset = Catalog.presets.find((item) => item.id === presetId);
     if (!preset) return;
+    const hasCurrentWork = state.answers.length > 0 || state.manual.length > 0 || state.excluded.length > 0;
+    if (hasCurrentWork && !window.confirm(`現在のヒアリング回答と選択項目を「${preset.name}」の構成に置き換えますか？`)) return;
     const before = compute();
-    const manual = new Set(state.manual);
-    const excluded = new Set(state.excluded);
-    preset.features.forEach((id) => { manual.add(id); excluded.delete(id); });
-    state.manual = [...manual];
-    state.excluded = [...excluded];
+    state.answers = [];
+    state.manual = [...preset.features];
+    state.excluded = [];
     state.dependencyFocus = preset.features[0] || state.dependencyFocus;
     const after = compute();
-    describeChange(before, after, `${preset.name}を追加`);
+    describeChange(before, after, `${preset.name}へ置き換え`);
+    renderQuestions();
     renderAll();
   }
 
@@ -595,13 +675,32 @@
 
   function exportCsv() {
     const map = featureMap();
-    const rows = [["項目番号", "状態", "やりたいことの分類", "見積項目", "技術名", "作業時間", "単体価格目安"]];
+    const rows = [
+      ["案件名", state.projectName],
+      ["顧客名", state.customerName || "未入力"],
+      ["発行者", state.issuerName || "未入力"],
+      ["見積番号", state.estimateNumber],
+      ["作成日", state.createdAt],
+      ["有効期限", state.validUntil],
+      ["金額区分", "参考概算・消費税別"],
+      ["1人の月間作業時間", state.hoursPerMonth],
+      ["予備費率", `${currentContingency()}%`],
+      ["前提・除外事項・ヒアリングメモ", state.notes || "未入力"],
+      [],
+      ["項目番号", "状態", "やりたいことの分類", "見積項目", "技術名", "作業時間", "項目費用（依存重複なし・消費税別）"],
+    ];
     [...selection.selected].forEach((id) => {
       const feature = map.get(id);
       if (!feature) return;
-      const hours = Engine.ROLES.reduce((sum, role) => sum + Number(feature.hours?.[role] || 0), 0);
-      rows.push([itemNumber(feature), featureSource(id)?.label || "一緒に必要", Catalog.plainLayers[feature.layer] || feature.layer, displayName(feature), technicalName(feature), hours, ownEstimate(feature).totalCost]);
+      const metrics = directFeatureMetrics(feature);
+      rows.push([itemNumber(feature), featureSource(id)?.label || "一緒に必要", Catalog.plainLayers[feature.layer] || feature.layer, displayName(feature), technicalName(feature), metrics.hours, metrics.cost]);
     });
+    rows.push(
+      [],
+      ["", "基本費用", "", "", "", estimate.baseHours, estimate.baseCost],
+      ["", `予備費 ${currentContingency()}%`, "", "", "", "", estimate.contingencyCost],
+      ["", "概算合計（消費税別）", "", "", "", "", estimate.totalCost],
+    );
     download(`${state.projectName || "案件"}-estimate.csv`, `\uFEFF${rows.map((row) => row.map(csvCell).join(",")).join("\r\n")}`, "text/csv;charset=utf-8");
   }
 
@@ -610,7 +709,10 @@
     reader.onload = () => {
       try {
         const parsed = JSON.parse(reader.result);
+        if (!parsed || typeof parsed !== "object") throw new Error("invalid data");
+        if (!window.confirm(`現在の案件「${state.projectName}」を、読込ファイルの内容で置き換えますか？\n必要なら先に「案件保存」でバックアップしてください。`)) return;
         const base = defaultState();
+        const keepAutoSave = state.autoSave;
         state = {
           ...base,
           ...parsed,
@@ -621,6 +723,10 @@
           profileRates: base.profileRates,
           contingencies: { company: Number(parsed.contingencies?.company ?? base.contingencies.company) },
           profile: "company",
+          autoSave: keepAutoSave,
+          estimateNumber: String(parsed.estimateNumber || base.estimateNumber),
+          createdAt: String(parsed.createdAt || base.createdAt),
+          validUntil: String(parsed.validUntil || base.validUntil),
         };
         renderQuestions();
         switchPage("estimate");
@@ -633,12 +739,26 @@
     reader.readAsText(file);
   }
 
+  function requestEstimatePage() {
+    const progress = questionProgress();
+    if (progress.unanswered > 0 && !window.confirm(`未確認の質問が${progress.unanswered}問あります。参考精度が低い状態で見積画面へ進みますか？`)) return;
+    switchPage("estimate");
+  }
+
   function bindEvents() {
     document.querySelector(".page-nav").addEventListener("click", (event) => {
       const button = event.target.closest("[data-page]");
-      if (button) switchPage(button.dataset.page);
+      if (button) button.dataset.page === "estimate" ? requestEstimatePage() : switchPage("interview");
     });
-    el("go-estimate").addEventListener("click", () => switchPage("estimate"));
+    document.querySelector(".page-nav").addEventListener("keydown", (event) => {
+      if (!event.target.matches('[role="tab"]') || !["ArrowLeft", "ArrowRight"].includes(event.key)) return;
+      event.preventDefault();
+      const targetPage = event.target.dataset.page === "interview" ? "estimate" : "interview";
+      const target = document.querySelector(`[data-page="${targetPage}"]`);
+      target.focus();
+      target.click();
+    });
+    el("go-estimate").addEventListener("click", requestEstimatePage);
 
     el("questions").addEventListener("change", (event) => {
       if (event.target.matches("[data-answer-key]")) toggleAnswer(event.target.dataset.answerKey, event.target.checked);
@@ -648,6 +768,8 @@
       if (button) applyPreset(button.dataset.preset);
     });
     el("clear-answers").addEventListener("click", () => {
+      if (!state.answers.length) return;
+      if (!window.confirm("ヒアリング回答だけをすべてクリアしますか？見積画面で直接選んだ項目は残ります。")) return;
       const before = compute();
       state.answers = [];
       renderQuestions();
@@ -677,6 +799,17 @@
     el("selected-only").addEventListener("change", renderFeatureTree);
 
     el("project-name").addEventListener("change", (event) => { state.projectName = event.target.value.trim() || "新規システム"; renderAll(); });
+    el("customer-name").addEventListener("change", (event) => { state.customerName = event.target.value.trim(); renderAll(); });
+    el("issuer-name").addEventListener("change", (event) => { state.issuerName = event.target.value.trim(); renderAll(); });
+    el("auto-save").addEventListener("change", (event) => {
+      state.autoSave = event.target.checked;
+      saveState();
+      setImpact(
+        state.autoSave ? "この端末への自動保存を有効にしました" : "この端末の自動保存データを削除しました",
+        state.autoSave ? "共有PCでは、利用後にオフへ戻すか案件を初期化してください。" : "現在の画面内容は残っています。必要なら案件保存でJSONをダウンロードしてください。",
+        !state.autoSave,
+      );
+    });
     el("contingency").addEventListener("input", (event) => { state.contingencies.company = Number(event.target.value); renderAll(); });
     el("hours-per-month").addEventListener("change", (event) => { state.hoursPerMonth = Math.max(80, Math.min(200, Number(event.target.value || 160))); renderAll(); });
     el("project-notes").addEventListener("change", (event) => { state.notes = event.target.value; saveState(); });
@@ -702,6 +835,7 @@
       if (!window.confirm("案件名、回答、見積項目、単価をすべて初期化しますか？")) return;
       state = defaultState();
       localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(STORAGE_CONSENT_KEY);
       renderQuestions();
       switchPage("interview");
       renderAll();

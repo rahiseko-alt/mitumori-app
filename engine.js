@@ -148,6 +148,14 @@
     };
   }
 
+  function calculateDurationMonths(hours, hoursPerMonth, teamSize = 3.25) {
+    const totalHours = Math.max(0, Number(hours || 0));
+    const monthlyHours = Math.max(1, Number(hoursPerMonth || 0));
+    const people = Math.max(1, Number(teamSize || 0));
+    if (!totalHours) return 0;
+    return Math.max(1, Math.ceil(totalHours / (monthlyHours * people)));
+  }
+
   return {
     ROLES,
     validateCatalog,
@@ -158,5 +166,6 @@
     reverseDependents,
     setBranchSelection,
     calculateEstimate,
+    calculateDurationMonths,
   };
 });

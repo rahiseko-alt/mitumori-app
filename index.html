@@ -23,20 +23,32 @@
         <span>依頼先</span>
         <output class="fixed-field">中小規模システム会社</output>
       </label>
+      <label>
+        <span>顧客名（印刷用・任意）</span>
+        <input id="customer-name" type="text" maxlength="80" placeholder="例：株式会社〇〇">
+      </label>
+      <label>
+        <span>発行者名（印刷用・任意）</span>
+        <input id="issuer-name" type="text" maxlength="80" placeholder="例：株式会社△△">
+      </label>
+      <label class="persistence-toggle">
+        <input id="auto-save" type="checkbox">
+        <span><strong>この端末に自動保存</strong><small>共有PCではオフのまま使用してください。案件保存はJSONをダウンロードします。</small></span>
+      </label>
     </div>
   </header>
 
-  <nav class="page-nav" aria-label="商談フェーズ">
-    <button type="button" data-page="interview" aria-selected="true">
+  <nav class="page-nav" aria-label="商談フェーズ" role="tablist">
+    <button id="tab-interview" type="button" role="tab" data-page="interview" aria-controls="page-interview" aria-selected="true">
       <span>1ページ目</span><strong>初回ヒアリング</strong><small>初回商談で使う</small>
     </button>
-    <button type="button" data-page="estimate" aria-selected="false">
+    <button id="tab-estimate" type="button" role="tab" data-page="estimate" aria-controls="page-estimate" aria-selected="false" tabindex="-1">
       <span>2ページ目</span><strong>やりたいこと別見積</strong><small>2回目以降で使う</small>
     </button>
   </nav>
 
   <main>
-    <section id="page-interview" class="page-panel is-active" aria-labelledby="interview-heading">
+    <section id="page-interview" class="page-panel is-active" role="tabpanel" aria-labelledby="tab-interview">
       <div class="phase-intro">
         <div>
           <p class="step">1ページ目・初回商談</p>
@@ -48,30 +60,30 @@
 
       <section class="interview-preview" aria-live="polite">
         <div><span>見積に入りそうな項目</span><strong id="interview-count">0件</strong></div>
-        <div><span>現時点の概算</span><strong id="interview-cost">￥0</strong></div>
+        <div><span>現時点の概算（消費税別）</span><strong id="interview-cost">￥0</strong></div>
         <p id="interview-note">回答すると自動で更新されます。</p>
       </section>
 
       <section class="preset-block">
-        <h3>近いシステムから始める</h3>
-        <p>商談の入口です。後で見積項目を一つずつ変更できます。</p>
+        <h3>近いシステムの構成に置き換える</h3>
+        <p>現在の回答と選択項目を置き換えます。適用後に一つずつ変更できます。</p>
         <div id="preset-buttons" class="preset-buttons"></div>
       </section>
 
       <div id="questions" class="question-list"></div>
 
       <div class="next-page-bar">
-        <div><strong>初回ヒアリングが終わったら</strong><span>必要になりそうな作業と金額を確認し、2回目の商談用見積へ進みます。</span></div>
+        <div><strong>初回ヒアリングが終わったら</strong><span id="interview-progress">未回答の質問があります。各質問で該当項目または「該当なし・まだ不明」を選んでください。</span></div>
         <button id="go-estimate" type="button" class="primary">やりたいこと別見積を開く →</button>
       </div>
     </section>
 
-    <section id="page-estimate" class="page-panel" aria-labelledby="estimate-heading" hidden>
+    <section id="page-estimate" class="page-panel" role="tabpanel" aria-labelledby="tab-estimate" hidden>
       <div class="phase-intro">
         <div>
           <p class="step">2ページ目・2回目以降の商談</p>
           <h2 id="estimate-heading">やりたいことをチェックして見積を詰める</h2>
-          <p>チェックの変更はその場で金額へ反映されます。上のまとまりを外すと、その下の項目もまとめて外れます。</p>
+          <p>チェックの変更はその場で金額へ反映されます。表示金額は参考概算・消費税別です。上のまとまりを外すと、その下もまとめて外れます。</p>
         </div>
         <div class="action-row">
           <button id="export-json" type="button" class="secondary">案件保存</button>
@@ -85,8 +97,21 @@
       <section class="summary-grid" aria-label="見積概要" aria-live="polite">
         <article><span>見積に含む項目</span><strong id="summary-count">0件</strong><small id="summary-count-detail">選択0・一緒に必要0</small></article>
         <article><span>合計作業時間</span><strong id="summary-hours">0時間</strong><small id="summary-months">1人換算 0か月分</small></article>
-        <article><span>概算費用</span><strong id="summary-cost">￥0</strong><small id="summary-contingency">予備費を含む</small></article>
+        <article><span>概算費用（消費税別）</span><strong id="summary-cost">￥0</strong><small id="summary-contingency">予備費を含む</small></article>
         <article><span>想定期間</span><strong id="summary-duration">0か月</strong><small id="summary-team">体制換算</small></article>
+      </section>
+
+      <section class="print-document-meta" aria-label="見積書情報">
+        <h2>開発費用 参考概算書</h2>
+        <dl>
+          <div><dt>案件名</dt><dd id="print-project-name">—</dd></div>
+          <div><dt>顧客名</dt><dd id="print-customer-name">—</dd></div>
+          <div><dt>発行者</dt><dd id="print-issuer-name">—</dd></div>
+          <div><dt>見積番号</dt><dd id="print-estimate-number">—</dd></div>
+          <div><dt>作成日</dt><dd id="print-created-at">—</dd></div>
+          <div><dt>有効期限</dt><dd id="print-valid-until">—</dd></div>
+        </dl>
+        <p>本書は参考概算です。表示金額は消費税別で、正式見積ではありません。</p>
       </section>
 
       <section id="impact-panel" class="impact-panel" aria-live="polite">
@@ -133,19 +158,21 @@
         </div>
 
         <h3>作業別の時間と費用</h3>
-        <div class="table-wrap"><table id="role-table"><thead><tr><th>作業</th><th>1時間単価（固定）</th><th>時間</th><th>1人換算月</th><th>費用</th></tr></thead><tbody></tbody></table></div>
+        <div class="table-wrap"><table id="role-table"><caption class="sr-only">担当作業別の時間と費用（消費税別）</caption><thead><tr><th>作業</th><th>1時間単価（固定）</th><th>時間</th><th>1人換算月</th><th>費用</th></tr></thead><tbody></tbody></table></div>
 
         <h3>やりたいこと別の明細</h3>
-        <div class="table-wrap"><table id="feature-table"><thead><tr><th>項目番号</th><th>状態</th><th>やりたいことの分類</th><th>見積項目</th><th>技術名</th><th>作業時間</th><th>単体価格目安</th></tr></thead><tbody></tbody></table></div>
+        <p class="table-note">各行はその項目自体の直接工数です。依存項目は別行で一度だけ計上されるため、この価格列は合計できます。</p>
+        <div class="table-wrap"><table id="feature-table"><caption class="sr-only">やりたいこと別の直接工数と費用（消費税別）</caption><thead><tr><th>項目番号</th><th>状態</th><th>やりたいことの分類</th><th>見積項目</th><th>技術名</th><th>作業時間</th><th>項目費用（税別）</th></tr></thead><tbody></tbody></table></div>
       </details>
 
       <label class="notes-field"><span>前提・除外事項・ヒアリングメモ</span><textarea id="project-notes" rows="6" placeholder="例：帳票は1種類。既存データ移行と外部サービス利用料は別途。"></textarea></label>
+      <section class="print-notes" aria-label="前提・除外事項・ヒアリングメモ"><h3>前提・除外事項・ヒアリングメモ</h3><p id="print-project-notes">記載なし</p></section>
     </section>
   </main>
 
   <footer>
     <button id="reset-project" type="button" class="danger">案件を初期化</button>
-    <p>作業時間と1時間あたりの金額は比較用の初期値です。正式見積では、作る範囲、現在使っている資料、必要な確認の程度、扱う情報量を確認してください。</p>
+    <p>表示金額は消費税別の参考概算です。作業時間と単価は比較用の初期値で、正式見積では対象範囲・既存資料・確認レベル・情報量を確認してください。</p>
   </footer>
 
   <dialog id="custom-dialog">

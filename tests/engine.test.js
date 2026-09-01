@@ -65,6 +65,25 @@ test("担当別工数・原価・予備費を集計できる", () => {
   assert.equal(result.baseCost, 130_000);
   assert.equal(result.contingencyCost, 26_000);
   assert.equal(result.totalCost, 156_000);
+  assert.equal(result.featureRows.reduce((sum, row) => sum + row.cost, 0), result.baseCost);
+});
+
+test("月間作業時間の変更が想定期間へ反映される", () => {
+  assert.equal(Engine.calculateDurationMonths(1_040, 160, 3.25), 2);
+  assert.equal(Engine.calculateDurationMonths(1_040, 80, 3.25), 4);
+  assert.equal(Engine.calculateDurationMonths(0, 160, 3.25), 0);
+});
+
+test("各項目の直接費用合計は依存関係を重複せず基本費用と一致する", () => {
+  const catalog = [feature("base", [], "backend", 5), feature("screen", ["base"], "frontend", 10)];
+  const rates = { ...zero(), frontend: 7_000, backend: 7_000 };
+  const selected = Engine.computeSelection(catalog, ["screen"]).selected;
+  const result = Engine.calculateEstimate(catalog, selected, rates, 15);
+
+  assert.equal(result.featureRows.length, 2);
+  assert.equal(result.featureRows.reduce((sum, row) => sum + row.cost, 0), 105_000);
+  assert.equal(result.baseCost, 105_000);
+  assert.equal(result.totalCost, 120_750);
 });
 
 test("親枝・中間枝・末端の解除範囲を分けられる", () => {
