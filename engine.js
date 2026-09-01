@@ -151,6 +151,41 @@
     };
   }
 
+  function applyPricingRules(catalog, selection) {
+    const selected = selection?.selected || new Set();
+    const direct = selection?.direct || new Set();
+    const includedByBundle = new Map();
+
+    for (const feature of catalog) {
+      if (!selected.has(feature.id)) continue;
+      for (const includedId of feature.bundleIncludes || []) {
+        if (selected.has(includedId)) includedByBundle.set(includedId, feature.id);
+      }
+    }
+
+    const pricingInfo = new Map();
+    const features = catalog.map((feature) => {
+      const standalonePrice = Math.max(0, Number(feature.fixedPrice || 0));
+      let appliedPrice = standalonePrice;
+      let adjustmentReason = "";
+      let adjustedBy = "";
+
+      if (selected.has(feature.id) && includedByBundle.has(feature.id)) {
+        appliedPrice = 0;
+        adjustedBy = includedByBundle.get(feature.id);
+        adjustmentReason = "上位の一式価格に内包";
+      } else if (selected.has(feature.id) && !direct.has(feature.id) && Number.isFinite(Number(feature.dependencyPrice))) {
+        appliedPrice = Math.max(0, Number(feature.dependencyPrice));
+        adjustmentReason = "自動追加時の共通基盤配賦";
+      }
+
+      pricingInfo.set(feature.id, { standalonePrice, appliedPrice, adjustmentReason, adjustedBy });
+      return appliedPrice === standalonePrice ? feature : { ...feature, fixedPrice: appliedPrice };
+    });
+
+    return { features, pricingInfo };
+  }
+
   function calculateDurationMonths(hours, hoursPerMonth, teamSize = 3.25) {
     const totalHours = Math.max(0, Number(hours || 0));
     const monthlyHours = Math.max(1, Number(hoursPerMonth || 0));
@@ -168,6 +203,7 @@
     dependencyTree,
     reverseDependents,
     setBranchSelection,
+    applyPricingRules,
     calculateEstimate,
     calculateDurationMonths,
   };

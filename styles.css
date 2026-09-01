@@ -103,6 +103,10 @@ main { width: min(1240px, calc(100% - 32px)); margin: 24px auto 48px; }
 .summary-grid article span, .summary-grid article small { color: var(--muted); }
 .summary-grid article strong { font-size: clamp(22px, 3vw, 32px); font-variant-numeric: tabular-nums; }
 
+.pricing-review-warning { display: flex; gap: 10px; margin: 14px 0 0; padding: 12px 14px; border-left: 4px solid var(--amber); background: var(--amber-soft); color: #704b0b; }
+.pricing-review-warning[hidden] { display: none; }
+.pricing-review-warning strong { white-space: nowrap; }
+
 .tabs {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -493,6 +497,7 @@ legend { padding: 0 6px; font-weight: 700; }
 .feature-price small { color: var(--muted); }
 .feature-price.is-temporary strong { color: var(--amber); }
 .feature-price.is-temporary small { color: #704b0b; }
+.feature-price.is-assessed strong { color: var(--blue); }
 .delta { margin-top: 3px; padding: 2px 7px; border-radius: 999px; font-size: 12px; font-weight: 700; }
 .delta.add { color: var(--primary-dark); background: var(--primary-soft); }
 .delta.remove { color: var(--danger); background: var(--danger-soft); }
@@ -503,12 +508,16 @@ legend { padding: 0 6px; font-weight: 700; }
 .check-lock { display: inline-flex; align-items: center; justify-content: center; width: 16px; font-size: 12px; line-height: 1; }
 .locked-badge { color: #164967; background: var(--blue-soft); }
 .badge.price-master { color: var(--primary-dark); background: var(--primary-soft); }
+.badge.price-assessed { color: #164967; background: var(--blue-soft); }
 .badge.price-temporary { color: #704b0b; background: var(--amber-soft); }
 .temporary-price-row { background: var(--amber-soft); }
+.assessed-price-row { background: #f5f9fc; }
 
 .dependency-inspector { position: static; overflow: hidden; }
 #dependency-help { margin: 14px 16px 8px; color: var(--muted); }
 #dependency-help strong { color: var(--text); font-size: 17px; }
+.price-explanation { display: grid; gap: 3px; margin-top: 10px; padding: 10px; border-radius: 8px; color: var(--text); background: var(--surface-soft); font-size: 12px; }
+.price-explanation b { margin-top: 4px; color: var(--primary-dark); }
 .dependency-root, .dependency-root ul { list-style: none; margin: 0; padding-left: 24px; }
 .dependency-root { padding: 8px 16px 16px; }
 .dependency-node { position: relative; margin: 7px 0; }

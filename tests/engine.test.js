@@ -118,17 +118,55 @@ test("非エンジニア向け項目名が全96機能に設定されている", 
   assert.deepEqual(Catalog.features.filter((item) => technicalWords.test(item.plainName)), []);
 });
 
-test("価格表対応項目は固定単価、非対応項目は仮0円である", () => {
+test("原本34項目を維持し、非対応62項目も正の査定単価を持つ", () => {
   const mapped = Catalog.features.filter((item) => item.priceStatus === "master");
-  const temporary = Catalog.features.filter((item) => item.priceStatus === "temporary");
+  const assessed = Catalog.features.filter((item) => item.priceStatus === "assessed");
 
   assert.equal(mapped.length, 34);
-  assert.equal(temporary.length, 62);
+  assert.equal(assessed.length, 62);
   assert.equal(Catalog.features.find((item) => item.id === "requirements").fixedPrice, 50_000);
   assert.equal(Catalog.features.find((item) => item.id === "admin-ui").fixedPrice, 250_000);
   assert.equal(Catalog.features.find((item) => item.id === "native-app").fixedPrice, 300_000);
-  assert.equal(Catalog.features.find((item) => item.id === "architecture").fixedPrice, 0);
-  assert.deepEqual(new Set(temporary.map((item) => item.fixedPrice)), new Set([0]));
+  assert.equal(Catalog.features.find((item) => item.id === "architecture").fixedPrice, 60_000);
+  assert.equal(Catalog.features.reduce((sum, item) => sum + item.fixedPrice, 0), 10_530_000);
+  assert.deepEqual(Catalog.features.filter((item) => item.fixedPrice <= 0), []);
+  assert.deepEqual(Catalog.features.filter((item) => !item.priceBasis || !item.priceIntent), []);
+});
+
+test("標準QA一式は単体・結合・画面操作テストを内包して二重計上しない", () => {
+  const selection = Engine.computeSelection(Catalog.features, ["qa-baseline"]);
+  const pricing = Engine.applyPricingRules(Catalog.features, selection);
+
+  for (const id of ["unit-tests", "integration-tests", "e2e-tests"]) {
+    assert.equal(pricing.pricingInfo.get(id).appliedPrice, 0);
+    assert.equal(pricing.pricingInfo.get(id).adjustedBy, "qa-baseline");
+  }
+  assert.equal(pricing.pricingInfo.get("qa-baseline").appliedPrice, 120_000);
+});
+
+test("外部API基盤は単独選択30万円、自動追加12万円で配賦する", () => {
+  const direct = Engine.computeSelection(Catalog.features, ["external-api"]);
+  const automatic = Engine.computeSelection(Catalog.features, ["webhooks"]);
+
+  assert.equal(Engine.applyPricingRules(Catalog.features, direct).pricingInfo.get("external-api").appliedPrice, 300_000);
+  assert.equal(Engine.applyPricingRules(Catalog.features, automatic).pricingInfo.get("external-api").appliedPrice, 120_000);
+});
+
+test("代表5プリセットの依存込み金額を固定検証する", () => {
+  const expected = {
+    "business-web": 2_560_000,
+    "customer-service": 2_940_000,
+    "field-photo": 3_240_000,
+    booking: 3_930_000,
+    saas: 3_890_000,
+  };
+
+  for (const preset of Catalog.presets) {
+    const selection = Engine.computeSelection(Catalog.features, preset.features);
+    const pricing = Engine.applyPricingRules(Catalog.features, selection);
+    const estimate = Engine.calculateEstimate(pricing.features, selection.selected, Catalog.rateProfiles.company.rates, 0);
+    assert.equal(estimate.totalCost, expected[preset.id], preset.name);
+  }
 });
 
 test("固定単価がある場合は工数単価ではなく固定単価を合計する", () => {

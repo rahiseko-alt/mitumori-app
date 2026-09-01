@@ -97,8 +97,12 @@
       <section class="summary-grid" aria-label="見積概要" aria-live="polite">
         <article><span>見積に含む項目</span><strong id="summary-count">0件</strong><small id="summary-count-detail">選択0・一緒に必要0</small></article>
         <article><span>合計作業時間</span><strong id="summary-hours">0時間</strong><small id="summary-months">1人換算 0か月分</small></article>
-        <article><span>機能単価合計（消費税別）</span><strong id="summary-cost">￥0</strong><small id="summary-price-note">採用項目の固定単価合計</small></article>
+        <article><span>相対参考単価合計（消費税別）</span><strong id="summary-cost">￥0</strong><small id="summary-price-note">原本単価と査定単価の合計</small></article>
         <article><span>想定期間</span><strong id="summary-duration">0か月</strong><small id="summary-team">体制換算</small></article>
+      </section>
+
+      <section id="pricing-review-warning" class="pricing-review-warning" aria-live="polite" hidden>
+        <strong></strong><span></span>
       </section>
 
       <section class="print-document-meta" aria-label="見積書情報">
@@ -161,7 +165,7 @@
         <div class="table-wrap"><table id="role-table"><caption class="sr-only">担当作業別の参考工数</caption><thead><tr><th>作業</th><th>時間</th><th>1人換算月</th></tr></thead><tbody></tbody></table></div>
 
         <h3>機能別価格マスタ明細</h3>
-        <p class="table-note">「価格表 機能別マスタ」（2026年6月29日）に対応する固定単価です。対応しない項目は仮0円として表示します。</p>
+        <p class="table-note">原本対応34項目は提示単価を維持し、非対応62項目は既存価格との規模・難易度・再利用性の比較で査定しました。これは市場総額ではなく、DATABANK内で整合させた相対参考単価です。</p>
         <div class="table-wrap"><table id="feature-table"><caption class="sr-only">機能別固定単価の明細（消費税別）</caption><thead><tr><th>項目番号</th><th>状態</th><th>分類</th><th>見積項目</th><th>価格表の対応項目</th><th>規模</th><th>参考工数</th><th>固定単価（税別）</th></tr></thead><tbody></tbody></table></div>
       </details>
 
@@ -172,7 +176,7 @@
 
   <footer>
     <button id="reset-project" type="button" class="danger">案件を初期化</button>
-    <p>表示金額は機能別固定単価の合計による消費税別の参考概算です。「仮0円」の項目は正式見積時に要確認です。年間保守費は合計の10%前後を目安に別途計上します。</p>
+    <p>表示金額は原本単価と補完査定単価の合計による消費税別の参考概算です。市場総額や正式見積ではありません。年間保守費は合計の10%前後を目安に別途計上します。</p>
   </footer>
 
   <dialog id="custom-dialog">

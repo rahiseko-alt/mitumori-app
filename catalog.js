@@ -144,7 +144,7 @@
   ];
 
   // DATABANK「価格表 機能別マスタ」（作成日 2026-06-29）との対応表。
-  // 明確に対応しない既存項目は、推測で価格を付けず仮0円とする。
+  // 原本に直接対応する34項目は提示単価を維持する。
   const priceMasterMeta = {
     name: "価格表 機能別マスタ",
     createdAt: "2026-06-29",
@@ -179,23 +179,101 @@
     "pdf-generator": { priceSize: "M", fixedPrice: 120000, priceSourceName: "ダウンロード（PDF）" },
     geolocation: { priceSize: "L", fixedPrice: 250000, priceSourceName: "位置情報連携" },
     "role-permissions": { priceSize: "L", fixedPrice: 200000, priceSourceName: "複雑な権限管理" },
-    "external-api": { priceSize: "L", fixedPrice: 300000, priceSourceName: "外部システム多数連携" },
+    "external-api": { priceSize: "L", fixedPrice: 300000, dependencyPrice: 120000, pricingClass: "foundation", priceSourceName: "外部システム多数連携" },
     "native-app": { priceSize: "M×2", fixedPrice: 300000, priceSourceName: "iOS対応＋Android対応" },
     pwa: { priceSize: "M", fixedPrice: 120000, priceSourceName: "Webアプリ対応（PWA）" },
     "security-baseline": { priceSize: "M", fixedPrice: 150000, priceSourceName: "セキュリティ対策" },
     "web-deploy": { priceSize: "M", fixedPrice: 150000, priceSourceName: "インフラ構築" },
-    "qa-baseline": { priceSize: "M", fixedPrice: 120000, priceSourceName: "テスト・QA" },
+    "qa-baseline": { priceSize: "M", fixedPrice: 120000, pricingClass: "bundle", bundleIncludes: ["unit-tests", "integration-tests", "e2e-tests"], priceSourceName: "テスト・QA" },
     "release-management": { priceSize: "S", fixedPrice: 50000, priceSourceName: "ストア申請・公開対応" },
   };
 
+  const assessed = (priceSize, fixedPrice, closest, priceBasis, priceIntent, extra = {}) => ({
+    priceSize,
+    fixedPrice,
+    priceStatus: "assessed",
+    priceSourceName: `査定単価（類似：${closest}）`,
+    priceBasis,
+    priceIntent,
+    pricingClass: "atomic",
+    ...extra,
+  });
+
+  // 3者検証（相場調査・全項目査定・依存監査）に基づく補完単価。
+  // 原本価格ではないため、priceStatus=assessed として画面・CSVで区別する。
+  const assessedPriceByFeature = {
+    "domain-research": assessed("S", 50000, "企画・要件定義", "調査・整理を行う上流作業が近く、S帯中央値と一致。", "要件定義に追加する業界・法令調査枠として計上する。"),
+    architecture: assessed("S", 60000, "企画・要件定義", "共通設計作業であり、公開料金の設計帯とS上限を参照。", "複数機能から使う全体構成だけを計上し、個別実装との重複を避ける。", { pricingClass: "foundation" }),
+    "dashboard-ui": assessed("M", 100000, "管理画面", "集計画面の公開価格帯8〜15万円と既存管理画面25万円を参照。", "集計基盤とグラフは別項目とし、配置・表示ロジックだけを計上する。"),
+    "charts-ui": assessed("M", 70000, "情報表示・一覧", "一覧6万円より描画・軸・凡例対応が増えるためM下限。", "API基盤を別計上し、グラフ表示固有の追加分に限定する。"),
+    "calendar-ui": assessed("M", 80000, "検索・絞り込み", "標準UIの8〜12万円帯と日付操作の複雑さを参照。", "予約ロジックを含めず、日・週・月の表示操作だけを計上する。"),
+    "rich-editor-ui": assessed("M", 80000, "UIコンポーネント設計", "再利用UI部品8万円と同水準。", "エディタ組込み・画像・表・装飾・保存形式対応を対象にする。"),
+    "api-foundation": assessed("S", 60000, "データベース連携", "多数機能から共用される基盤のため、単独API価格より低いS上限。", "個別API処理は各機能側で計上し、共通検証・エラー処理だけを一度計上する。", { pricingClass: "foundation" }),
+    "business-rules": assessed("M", 100000, "検索・絞り込み", "標準的な業務ロジックの公開価格帯10〜20万円の下側。", "金額・期限・判定の実装と試験を対象にし、APIとデータ設計は別計上する。"),
+    "workflow-engine": assessed("M", 120000, "予約・注文フロー", "状態遷移は標準業務機能の12〜20万円帯。", "履歴・計算基盤を別計上し、状態遷移管理そのものに限定する。"),
+    "approval-flow": assessed("M", 150000, "複雑な権限管理", "差戻し・承認履歴を伴うため標準ワークフローより上。", "状態管理・権限・通知の依存価格と重ならない承認固有処理を計上する。"),
+    "estimate-invoice": assessed("M", 180000, "決済機能", "税・値引き・明細計算は金額誤りリスクが高くM上位。", "PDF・マスタ・計算基盤を別計上し、見積請求ロジックに価格を置く。"),
+    "product-catalog": assessed("M", 100000, "検索・絞り込み", "商品CRUDは標準業務画面の10万円帯。", "管理画面とマスタ管理を別計上し、商品・価格・公開状態の処理に限定する。"),
+    inventory: assessed("L", 180000, "予約・注文フロー", "引当・棚卸・入出庫の整合性管理はL下限相当。", "商品台帳と履歴を別計上し、在庫固有の整合性処理を評価する。"),
+    ecommerce: assessed("L", 300000, "マッチングロジック", "カート・注文・配送状態をまたぐ大規模業務機能でL中央値。", "商品・在庫・決済・顧客画面を明細化した上で注文固有部分を計上する。"),
+    crm: assessed("M", 200000, "管理画面", "顧客・商談・履歴の関係管理はM上位。", "共通画面と履歴機構を除いた顧客案件業務の複雑さを評価する。"),
+    "report-generator": assessed("M", 150000, "PDF出力", "帳票公開価格10万円〜に差込み・改ページ・表配置を加味。", "PDF変換単体を別計上し、テンプレート生成固有の作業を計上する。"),
+    "scheduled-jobs": assessed("M", 70000, "プッシュ通知", "単純バッチの公開価格15万円〜を、共通キュー別計上で抑制。", "スケジュール登録と実行管理に限定しM下限とする。"),
+    "schema-design": assessed("S", 60000, "データベース連携", "多数機能から自動追加される共通設計のためS上限。", "DB環境と個別ロジックを別計上し、テーブル・関係・制約設計だけを一度計上する。", { pricingClass: "foundation" }),
+    "master-data": assessed("M", 80000, "管理画面", "選択肢・単価管理は標準CRUDの8〜12万円帯。", "フォームと管理画面を別計上し、マスタ処理固有部分に限定する。"),
+    "history-versioning": assessed("M", 100000, "セキュリティ対策", "差分保存・変更者・復元は標準データ機能より高い。", "認証とデータ設計を別計上し、履歴・版管理固有の処理を評価する。"),
+    "file-storage": assessed("M", 70000, "画像添付", "保管処理は添付UI10万円より軽くM下限。", "添付画面・公開環境・セキュリティを別計上し、権限付き保管だけを計上する。", { pricingClass: "foundation" }),
+    "search-index": assessed("M", 80000, "検索・絞り込み", "索引生成は検索機能10万円の基盤部分。", "検索画面を別計上し、索引の作成・更新処理に限定する。"),
+    "analytics-store": assessed("M", 90000, "データベース連携", "集計履歴と分析用構造は標準DB機能の中位。", "DB基盤・定期処理・表示画面を別計上する。"),
+    "backup-restore": assessed("M", 80000, "インフラ構築", "公開事業者の単純設定5.5万円と復元確認を考慮。", "DB・監視・DRを別計上し、バックアップ設定と復元確認に限定する。", { pricingClass: "foundation" }),
+    "data-migration": assessed("M", 160000, "CSVダウンロード", "検査・変換・欠損対応・照合が必要なため入出力8万円の2倍。", "標準的なデータ量を前提とし、件数・品質で別途補正する。"),
+    "user-accounts": assessed("M", 70000, "会員登録・ログイン", "登録・停止・退会データ処理は認証12万円の基盤部分。", "ログインUIとセッションを別計上し、アカウント管理だけを評価する。", { pricingClass: "foundation" }),
+    "session-security": assessed("S", 40000, "会員登録・ログイン", "複数認証方式から共用されるためS帯。", "期限切れ・ログアウト・端末管理の共通部分だけを一度計上する。", { pricingClass: "foundation" }),
+    mfa: assessed("M", 80000, "SNSログイン連携", "認証方式を1つ追加する既存単価8万円と同水準。", "通知とセッションを別計上し、多要素認証固有部分を計上する。"),
+    "organization-tenancy": assessed("L", 250000, "複雑な権限管理", "データ混在が重大事故になるためL中位。", "会社境界の設計・実装・境界試験へ重点配分する。"),
+    "external-portal-access": assessed("M", 150000, "複雑な権限管理", "招待・期限・対象データ制限が必要なM上位。", "権限管理と監査ログを別計上し、社外アクセス固有部分を評価する。"),
+    "audit-log": assessed("M", 90000, "セキュリティ対策", "証跡保存・検索・改ざん防止を含む標準セキュリティ機能。", "複数機能から共用されるためM中位に抑え一度だけ計上する。", { pricingClass: "foundation" }),
+    "security-review": assessed("M", 100000, "セキュリティ対策", "公開価格と専門レビュー工程の標準帯。", "基本設計と試験を別計上し、第三者確認と是正に限定する。"),
+    "file-upload": assessed("M", 70000, "画像添付", "汎用文書添付は画像プレビュー・並替えより軽い。", "保管とAPIを別計上し、アップロードUIと失敗処理に限定する。"),
+    "image-processing": assessed("S", 60000, "画像添付", "画像添付から自動追加される補助処理としてS上限。", "保管・非同期基盤を別計上し、圧縮とサムネイル生成だけを評価する。"),
+    "camera-capture": assessed("S", 60000, "画像添付", "カメラ起動と登録導線は画像添付の追加機能。", "画像添付とレスポンシブを別計上し、撮影導線だけを計上する。"),
+    "offline-sync": assessed("L", 300000, "外部システム多数連携", "競合解決・再送・端末保存・障害試験を伴う高難度L機能。", "通信不安定時のデータ損失リスクを価格へ反映する。"),
+    webhooks: assessed("M", 70000, "外部システム多数連携", "単一連携の署名検証・冪等性・再送はM下限。", "外部API共通基盤とキューを別計上しWebhook固有部分に限定する。"),
+    "email-integration": assessed("S", 40000, "お知らせ配信", "テンプレート送信・再送は既存お知らせ4万円と同水準。", "キューと通知管理を別計上し、単一メールサービス接続に限定する。"),
+    "sms-integration": assessed("S", 50000, "プッシュ通知", "単一SMSサービス接続はS中央値。", "外部API共通基盤とキューを別計上し、SMS固有処理に限定する。"),
+    "messaging-integration": assessed("M", 80000, "プッシュ通知", "単一チャットサービスへの通知は既存通知8万円と同水準。", "多数連携ではなく1サービスの通知・共有URL送付を前提にする。"),
+    "accounting-integration": assessed("L", 180000, "外部システム多数連携", "金額データの同期・照合を伴うためL下限。", "単一会計サービス前提とし、多数連携は別補正する。"),
+    "maps-integration": assessed("M", 80000, "位置情報連携", "住所検索・座標取得のAPI部分は位置情報25万円より軽い。", "位置情報画面と外部API共通基盤を別計上する。"),
+    "calendar-integration": assessed("M", 150000, "外部システム多数連携", "双方向同期・重複・変更処理の複雑さをM上位で評価。", "単一カレンダーサービスを標準条件とする。"),
+    "esign-integration": assessed("L", 220000, "外部システム多数連携", "証跡・文書・Webhookを伴う重要連携でL中位。", "単一電子契約サービス前提で、法的証跡リスクを反映する。"),
+    staging: assessed("S", 40000, "インフラ構築", "本番環境に追加する補助環境としてS帯。", "本番公開基盤を別計上し、追加設定分だけを計上する。", { pricingClass: "foundation" }),
+    cicd: assessed("M", 70000, "インフラ構築", "ビルド・検査・配備自動化は公開料金の8〜15万円帯。", "検証環境と単体テストを別計上し、パイプライン構築に限定する。", { pricingClass: "foundation" }),
+    monitoring: assessed("S", 50000, "インフラ構築", "公開クラウド基本設定5.5万円と同水準。", "複数項目から共用する基本アラート設定を一度だけ計上する。", { pricingClass: "foundation" }),
+    "error-tracking": assessed("S", 30000, "インフラ構築", "監視導入済み前提の追加設定としてS下限。", "エラー収集・通知・原因追跡の追加分だけを計上する。", { pricingClass: "foundation" }),
+    cdn: assessed("S", 40000, "インフラ構築", "単純CDN設定はS帯。", "公開環境と監視を別計上し、キャッシュ方針の追加分だけを評価する。", { pricingClass: "foundation" }),
+    "queue-worker": assessed("S", 60000, "インフラ構築", "多数機能から共用される非同期基盤のためS上限。", "個別ジョブ処理は各機能側へ置き、再試行基盤だけを一度計上する。", { pricingClass: "foundation" }),
+    "scalable-infra": assessed("L", 180000, "インフラ構築", "負荷分散・拡張設計・検証を含むためL下限。", "CDN・キュー・監視を別計上し、拡張構成固有の作業を評価する。"),
+    "disaster-recovery": assessed("L", 180000, "インフラ構築", "RTO/RPO・切替・復旧訓練を含むためL下限。", "バックアップと検証環境を別計上し、復旧計画・訓練を対象にする。"),
+    "unit-tests": assessed("S", 40000, "テスト・QA", "標準QA12万円の一構成要素としてS帯。", "単独採用時の価格を持たせ、QA一式採用時は内包して重複請求しない。"),
+    "integration-tests": assessed("S", 60000, "テスト・QA", "API・DB接続確認は標準QAの一部としてS上限。", "単独採用時の価格を持たせ、QA一式採用時は内包する。"),
+    "e2e-tests": assessed("S", 60000, "テスト・QA", "主要操作シナリオの自動化は標準QAの一部。", "単独採用時の価格を持たせ、QA一式採用時は内包する。"),
+    "performance-tests": assessed("M", 80000, "テスト・QA", "専用シナリオ・負荷投入・分析が必要なM帯。", "拡張インフラを別計上し、性能検証工程だけを対象にする。"),
+    "accessibility-tests": assessed("S", 30000, "アクセシビリティ対応", "実装対応7万円とは別の確認工程としてS下限。", "読み上げ・キーボード・コントラスト試験だけを計上する。"),
+    "security-tests": assessed("M", 80000, "セキュリティ対策", "権限・入力・ライブラリ・設定試験はM帯。", "基本設計を別計上し、検査と報告に限定する。"),
+    "uat-support": assessed("M", 70000, "テスト・QA", "顧客向けシナリオ・説明・指摘管理はM下限。", "実試験と環境を別計上し、受入支援に限定する。"),
+    "project-management": assessed("M", 80000, "企画・要件定義", "小中規模案件の固定PM枠としてM下限。", "基本進行管理の参考額とし、大規模案件では開発小計10〜15%で再校正する。"),
+    "documentation-training": assessed("M", 70000, "静的ページ", "文書作成に説明会・運用ルール整備を加えM下限。", "操作マニュアルと管理者説明の導入作業を対象にする。"),
+    "support-operation": assessed("M", 70000, "インフラ構築", "問い合わせ・障害対応フローの初期設計はM下限。", "年間保守10%とは分離し、初期の運用設計だけを計上する。", { pricingClass: "service-setup" }),
+  };
+
   features.forEach((feature) => {
-    Object.assign(feature, priceMasterByFeature[feature.id] || {
-      priceSize: "—",
-      fixedPrice: 0,
-      priceSourceName: "該当なし（仮0円）",
-      priceStatus: "temporary",
-    });
+    const masterPrice = priceMasterByFeature[feature.id];
+    const assessedPrice = assessedPriceByFeature[feature.id];
+    Object.assign(feature, masterPrice || assessedPrice);
     if (!feature.priceStatus) feature.priceStatus = "master";
+    if (!feature.pricingClass) feature.pricingClass = "atomic";
+    if (!feature.priceBasis) feature.priceBasis = `DATABANK原本「${feature.priceSourceName}」の提示単価。`;
+    if (!feature.priceIntent) feature.priceIntent = "ユーザー提示の原本価格を変更せず、そのまま採用する。";
   });
 
   const plainLayers = {

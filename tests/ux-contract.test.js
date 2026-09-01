@@ -15,16 +15,19 @@ test("自動保存は明示同意がない限り復元・保存しない", () =>
 });
 
 test("参考概算は消費税別と画面・CSV・印刷で明示する", () => {
-  assert.match(html, /機能単価合計（消費税別）/);
+  assert.match(html, /相対参考単価合計（消費税別）/);
   assert.match(html, /正式見積ではありません/);
   assert.match(app, /参考概算・消費税別/);
-  assert.match(app, /機能単価合計（消費税別）/);
+  assert.match(app, /相対参考単価合計（消費税別）/);
 });
 
-test("固定単価マスタと仮0円を画面・CSVで区別する", () => {
-  assert.match(html, /対応しない項目は仮0円/);
-  assert.match(app, /priceStatus === "temporary"/);
-  assert.match(app, /仮0円・要確認/);
+test("原本単価と査定単価を画面・CSVで区別し根拠と意図を示す", () => {
+  assert.match(html, /非対応62項目は.+査定/);
+  assert.match(html, /市場総額ではなく/);
+  assert.match(app, /priceStatus === "assessed"/);
+  assert.match(app, /値付け根拠/);
+  assert.match(app, /値付け意図/);
+  assert.match(app, /pricing-review-warning/);
   assert.doesNotMatch(html, /id="contingency"/);
 });
 
