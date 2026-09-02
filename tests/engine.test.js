@@ -133,15 +133,27 @@ test("原本34項目を維持し、非対応62項目も正の査定単価を持�
   assert.deepEqual(Catalog.features.filter((item) => !item.priceBasis || !item.priceIntent), []);
 });
 
-test("標準QA一式は単体・結合・画面操作テストを内包して二重計上しない", () => {
+test("難易度指数は価格を変更せず、基本工程を指数1にする", () => {
+  assert.equal(Catalog.features.find((item) => item.id === "requirements").difficultyIndex, 1);
+  assert.equal(Catalog.features.find((item) => item.id === "information-architecture").difficultyIndex, 1);
+  assert.equal(Catalog.features.find((item) => item.id === "native-app").difficultyIndex, 5);
+  assert.deepEqual(Catalog.features.filter((item) => !Number.isInteger(item.difficultyIndex) || item.difficultyIndex < 1 || item.difficultyIndex > 5), []);
+  assert.equal(Catalog.features.find((item) => item.id === "requirements").fixedPrice, 50_000);
+});
+
+test("必須固定6項目は不要な画面・DB・CI/CDを自動追加しない", () => {
+  assert.deepEqual(Catalog.mandatoryFeatureIds, [
+    "requirements", "architecture", "security-baseline", "qa-baseline", "project-management", "release-management",
+  ]);
   const selection = Engine.computeSelection(Catalog.features, ["qa-baseline"]);
   const pricing = Engine.applyPricingRules(Catalog.features, selection);
 
-  for (const id of ["unit-tests", "integration-tests", "e2e-tests"]) {
-    assert.equal(pricing.pricingInfo.get(id).appliedPrice, 0);
-    assert.equal(pricing.pricingInfo.get(id).adjustedBy, "qa-baseline");
-  }
+  assert.deepEqual([...selection.selected], ["qa-baseline"]);
+  assert.deepEqual(Catalog.features.find((item) => item.id === "qa-baseline").dependencies, []);
+  assert.deepEqual(Catalog.features.find((item) => item.id === "release-management").dependencies, []);
   assert.equal(pricing.pricingInfo.get("qa-baseline").appliedPrice, 120_000);
+  const qaWithUnit = Engine.computeSelection(Catalog.features, ["qa-baseline", "unit-tests"]);
+  assert.equal(Engine.applyPricingRules(Catalog.features, qaWithUnit).pricingInfo.get("unit-tests").appliedPrice, 0);
 });
 
 test("外部API基盤は単独選択30万円、自動追加12万円で配賦する", () => {
@@ -152,17 +164,17 @@ test("外部API基盤は単独選択30万円、自動追加12万円で配賦す�
   assert.equal(Engine.applyPricingRules(Catalog.features, automatic).pricingInfo.get("external-api").appliedPrice, 120_000);
 });
 
-test("代表5プリセットの依存込み金額を固定検証する", () => {
+test("必須固定を含む代表5プリセットの依存込み金額を固定検証する", () => {
   const expected = {
-    "business-web": 2_560_000,
-    "customer-service": 2_940_000,
-    "field-photo": 3_240_000,
-    booking: 3_930_000,
-    saas: 3_890_000,
+    "business-web": 2_310_000,
+    "customer-service": 2_730_000,
+    "field-photo": 2_990_000,
+    booking: 3_720_000,
+    saas: 3_760_000,
   };
 
   for (const preset of Catalog.presets) {
-    const selection = Engine.computeSelection(Catalog.features, preset.features);
+    const selection = Engine.computeSelection(Catalog.features, [...new Set([...preset.features, ...Catalog.mandatoryFeatureIds])]);
     const pricing = Engine.applyPricingRules(Catalog.features, selection);
     const estimate = Engine.calculateEstimate(pricing.features, selection.selected, Catalog.rateProfiles.company.rates, 0);
     assert.equal(estimate.totalCost, expected[preset.id], preset.name);

@@ -22,10 +22,14 @@ test("参考概算は消費税別と画面・CSV・印刷で明示する", () =>
   assert.match(app, /相対参考単価合計（消費税別）/);
 });
 
-test("原本単価と査定単価を画面・CSVで区別し根拠と意図を示す", () => {
+test("原本単価と査定単価を維持し、難易度指数と必須固定を示す", () => {
   assert.match(html, /非対応62項目は.+査定/);
-  assert.match(html, /市場総額ではなく/);
+  assert.match(html, /難易度指数（価格は変更しません）/);
+  assert.match(html, /現在の固定単価、原本単価、査定単価のいずれも変更しません/);
   assert.match(app, /priceStatus === "assessed"/);
+  assert.match(app, /mandatoryFeatureIds/);
+  assert.match(app, /isMandatoryFeature/);
+  assert.match(app, /difficultyIndex/);
   assert.match(app, /値付け根拠/);
   assert.match(app, /値付け意図/);
   assert.match(app, /pricing-review-warning/);

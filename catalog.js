@@ -276,6 +276,42 @@
     if (!feature.priceIntent) feature.priceIntent = "ユーザー提示の原本価格を変更せず、そのまま採用する。";
   });
 
+  // 難易度指数は価格とは独立した比較指標。fixedPrice / priceSize は変更しない。
+  const mandatoryFeatureIds = [
+    "requirements",
+    "architecture",
+    "security-baseline",
+    "qa-baseline",
+    "project-management",
+    "release-management",
+  ];
+  const mandatoryReasons = {
+    requirements: "目的・範囲・受入条件を決める工程です。",
+    architecture: "全体構成とデータの考え方を決める工程です。",
+    "security-baseline": "入力・通信・アクセスの基本的な安全対策です。",
+    "qa-baseline": "完成条件を確認する標準の品質保証工程です。",
+    "project-management": "進捗・課題・変更・顧客確認を管理する工程です。",
+    "release-management": "公開判定・変更内容・切戻しを管理する工程です。",
+  };
+
+  // QAとリリース管理は横断工程であり、選択済みの機能を確認・公開する。
+  // これ自体を固定しただけで、画面・DB・CI/CD等を強制しない。
+  const qaBaseline = features.find((feature) => feature.id === "qa-baseline");
+  const releaseManagement = features.find((feature) => feature.id === "release-management");
+  if (qaBaseline) {
+    qaBaseline.dependencies = [];
+    qaBaseline.bundleIncludes = ["unit-tests", "integration-tests", "e2e-tests"];
+  }
+  if (releaseManagement) releaseManagement.dependencies = [];
+
+  features.forEach((feature) => {
+    const totalHours = Object.values(feature.hours || {}).reduce((sum, value) => sum + Number(value || 0), 0);
+    const difficultyIndex = totalHours <= 70 ? 1 : totalHours <= 110 ? 2 : totalHours <= 160 ? 3 : totalHours <= 230 ? 4 : 5;
+    feature.difficultyIndex = difficultyIndex;
+    feature.difficultyLabel = ({ 1: "基本", 2: "標準", 3: "高度", 4: "複雑", 5: "最難" })[difficultyIndex];
+    feature.difficultyReason = `参考工数${totalHours}時間、状態数・整合性・外部連携・失敗時影響を比較した指数です。価格は変更しません。`;
+  });
+
   const plainLayers = {
     planning: "何を作るか決める", frontend: "利用者が見る・入力する", backend: "仕事の流れや計算を動かす",
     data: "情報を保存・探す", security: "安全にログイン・使い分ける", mobile: "現場やスマホで使う",
@@ -515,5 +551,5 @@
     ] },
   ];
 
-  return { layers, plainLayers, plainNames, roles, features, questions, presets, rateProfiles, featureHierarchy, priceMasterMeta };
+  return { layers, plainLayers, plainNames, roles, features, questions, presets, rateProfiles, featureHierarchy, priceMasterMeta, mandatoryFeatureIds, mandatoryReasons };
 });

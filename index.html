@@ -117,6 +117,22 @@
         <strong></strong><span></span>
       </section>
 
+      <section class="difficulty-scale" aria-labelledby="difficulty-scale-heading">
+        <div>
+          <p class="step">金額とは別の比較軸</p>
+          <h3 id="difficulty-scale-heading">難易度指数（価格は変更しません）</h3>
+          <p>通常APPで基本になる要件定義・情報設計・ワイヤー等を指数1とし、状態数、整合性、外部連携、失敗時の影響が増えるほど指数を上げます。</p>
+        </div>
+        <ol>
+          <li><strong>指数1</strong><span>基本</span></li>
+          <li><strong>指数2</strong><span>標準</span></li>
+          <li><strong>指数3</strong><span>高度</span></li>
+          <li><strong>指数4</strong><span>複雑</span></li>
+          <li><strong>指数5</strong><span>最難</span></li>
+        </ol>
+        <small>この指数は比較・説明用です。現在の固定単価、原本単価、査定単価のいずれも変更しません。</small>
+      </section>
+
       <section class="print-document-meta" aria-label="見積書情報">
         <h2>開発費用 参考概算書</h2>
         <dl>
@@ -137,6 +153,7 @@
 
       <section class="tree-guide">
         <div><span class="tree-symbol selectable">✓</span><strong>選べる項目</strong><small>チェックで見積へ追加・解除</small></div>
+        <div><span class="tree-symbol mandatory">🔒</span><strong>必須固定</strong><small>標準APP開発で常に発生する工程</small></div>
         <div><span class="tree-symbol locked">🔒</span><strong>一緒に必要</strong><small>選んだ項目に必要な間は自動で残る</small></div>
         <div><span class="tree-symbol shared">●</span><strong>他でも使用</strong><small>複数箇所で使っても一度だけ計上</small></div>
       </section>
@@ -177,8 +194,8 @@
         <div class="table-wrap"><table id="role-table"><caption class="sr-only">担当作業別の参考工数</caption><thead><tr><th>作業</th><th>時間</th><th>1人換算月</th></tr></thead><tbody></tbody></table></div>
 
         <h3>機能別価格マスタ明細</h3>
-        <p class="table-note">原本対応34項目は提示単価を維持し、非対応62項目は既存価格との規模・難易度・再利用性の比較で査定しました。これは市場総額ではなく、DATABANK内で整合させた相対参考単価です。</p>
-        <div class="table-wrap"><table id="feature-table"><caption class="sr-only">機能別固定単価の明細（消費税別）</caption><thead><tr><th>項目番号</th><th>状態</th><th>分類</th><th>見積項目</th><th>価格表の対応項目</th><th>規模</th><th>参考工数</th><th>固定単価（税別）</th></tr></thead><tbody></tbody></table></div>
+        <p class="table-note">原本対応34項目は提示単価を維持し、非対応62項目は既存価格との規模・難易度・再利用性の比較で査定しました。難易度指数は金額を変更しない、説明・比較用の別指標です。</p>
+        <div class="table-wrap"><table id="feature-table"><caption class="sr-only">機能別固定単価の明細（消費税別）</caption><thead><tr><th>項目番号</th><th>状態</th><th>分類</th><th>見積項目</th><th>価格表の対応項目</th><th>難易度指数</th><th>規模</th><th>参考工数</th><th>固定単価（税別）</th></tr></thead><tbody></tbody></table></div>
       </details>
 
       <label class="notes-field"><span>前提・除外事項・ヒアリングメモ</span><textarea id="project-notes" rows="6" placeholder="例：帳票は1種類。既存データ移行と外部サービス利用料は別途。"></textarea></label>
