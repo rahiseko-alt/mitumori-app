@@ -228,6 +228,7 @@ h3 { margin: 28px 0 10px; font-size: 18px; }
 .range-line { display: flex; align-items: center; gap: 12px; }
 .range-line output { min-width: 46px; font-weight: 700; font-variant-numeric: tabular-nums; }
 .table-wrap { overflow-x: auto; }
+#feature-table { min-width: 760px; }
 .table-note { margin: -4px 0 10px; color: var(--muted); font-size: 13px; }
 .sr-only {
   position: absolute;
@@ -481,6 +482,8 @@ legend { padding: 0 6px; font-weight: 700; }
   .estimate-workspace { grid-template-columns: 1fr; }
   .dependency-inspector { position: static; }
   .tree-guide { grid-template-columns: 1fr; }
+  .difficulty-scale { grid-template-columns: 1fr; }
+  .difficulty-scale ol { max-width: none; }
 }
 
 @media (max-width: 620px) {
@@ -506,6 +509,9 @@ legend { padding: 0 6px; font-weight: 700; }
   .technical-name { margin-left: 0; }
   .dependency-root, .dependency-root ul { padding-left: 12px; }
   .dependency-node > ul { margin-left: 4px; }
+  .dependency-row { grid-template-columns: auto minmax(0, 1fr); }
+  .dependency-row .shared-badge { grid-column: 2; justify-self: start; margin-top: 4px; }
+  .dependency-row .technical-name, #dependency-help .technical-name { margin-left: 0; }
   .tree-group-heading { align-items: flex-start; }
   .branch-rule { display: none; }
   .custom-grid .wide { grid-column: auto; }
@@ -568,5 +574,6 @@ legend { padding: 0 6px; font-weight: 700; }
   .section-heading { margin-bottom: 8mm; }
   .table-wrap { overflow: visible; }
   table { page-break-inside: auto; }
+  #feature-table { min-width: 0; }
   tr { page-break-inside: avoid; }
 }
