@@ -290,12 +290,6 @@
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
-  function renderPresets() {
-    el("preset-buttons").innerHTML = Catalog.presets
-      .map((preset) => `<button type="button" data-preset="${preset.id}">${escapeHtml(preset.name)}に置き換え</button>`)
-      .join("");
-  }
-
   function renderQuestions() {
     const answers = new Set(state.answers);
     el("questions").innerHTML = Catalog.questions.map((question, index) => `
@@ -686,22 +680,6 @@
     renderAll();
   }
 
-  function applyPreset(presetId) {
-    const preset = Catalog.presets.find((item) => item.id === presetId);
-    if (!preset) return;
-    const hasCurrentWork = state.answers.length > 0 || state.manual.length > 0 || state.excluded.length > 0;
-    if (hasCurrentWork && !window.confirm(`現在のヒアリング回答と選択項目を「${preset.name}」の構成に置き換えますか？`)) return;
-    const before = compute();
-    state.answers = [];
-    state.manual = [...preset.features];
-    state.excluded = [];
-    state.dependencyFocus = preset.features[0] || state.dependencyFocus;
-    const after = compute();
-    describeChange(before, after, `${preset.name}へ置き換え`);
-    renderQuestions();
-    renderAll();
-  }
-
   function openCustomDialog() {
     el("custom-feature-form").reset();
     customDependencyDraft = new Set();
@@ -857,10 +835,6 @@
     el("questions").addEventListener("change", (event) => {
       if (event.target.matches("[data-answer-key]")) toggleAnswer(event.target.dataset.answerKey, event.target.checked);
     });
-    el("preset-buttons").addEventListener("click", (event) => {
-      const button = event.target.closest("[data-preset]");
-      if (button) applyPreset(button.dataset.preset);
-    });
     el("clear-answers").addEventListener("click", () => {
       if (!state.answers.length) return;
       if (!window.confirm("ヒアリング回答だけをすべてクリアしますか？見積画面で直接選んだ項目は残ります。")) return;
@@ -935,7 +909,6 @@
     });
   }
 
-  renderPresets();
   renderQuestions();
   renderCustomHours();
   renderCustomDependencies();
