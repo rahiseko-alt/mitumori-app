@@ -194,10 +194,17 @@
     return Catalog.rateProfiles.company.rates;
   }
 
+  // 予備費は catalog.js の rateProfiles.company.contingency を出発点に state で保持する。
+  // 別枠で一度だけ掛ける値なので、明細の単価と作業時間には影響させない。
+  function currentContingency() {
+    const value = Number(state.contingencies?.company);
+    return Number.isFinite(value) && value >= 0 ? value : Number(Catalog.rateProfiles.company.contingency || 0);
+  }
+
   function compute(ids = directIds()) {
     const result = Engine.computeSelection(allFeatures(), ids);
     const pricing = Engine.applyPricingRules(allFeatures(), result);
-    const value = Engine.calculateEstimate(pricing.features, result.selected, currentRates(), 0);
+    const value = Engine.calculateEstimate(pricing.features, result.selected, currentRates(), currentContingency());
     return { selection: result, estimate: value, pricingInfo: pricing.pricingInfo };
   }
 
