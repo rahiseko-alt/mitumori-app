@@ -639,7 +639,7 @@
     const map = featureMap();
     const rows = [
       ["案件名", state.projectName],
-      ["顧客名", state.customerName || "未入力"],
+      ["商談相手名", state.customerName || "未入力"],
       ["発行者", state.issuerName || "未入力"],
       ["見積番号", state.estimateNumber],
       ["作成日", state.createdAt],
