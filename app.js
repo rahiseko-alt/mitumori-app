@@ -36,7 +36,6 @@
       issuerName: "",
       profile: "company",
       manual: [],
-      answers: [],
       excluded: [],
       customFeatures: [],
       profileRates: {
@@ -51,7 +50,6 @@
       estimateNumber: newEstimateNumber(),
       createdAt: localDate(created),
       validUntil: localDate(validUntil),
-      activePage: "interview",
       dependencyFocus: "project-management",
     });
   };
@@ -86,14 +84,12 @@
         ...base,
         ...saved,
         manual: Array.isArray(saved.manual) ? saved.manual : base.manual,
-        answers: Array.isArray(saved.answers) ? saved.answers : [],
         excluded: Array.isArray(saved.excluded) ? saved.excluded : [],
         customFeatures: normalizeCustomFeatures(saved.customFeatures),
         profileRates: base.profileRates,
         contingencies: { company: Number(saved.contingencies?.company ?? base.contingencies.company) },
         profile: "company",
         autoSave: true,
-        activePage: saved.activePage === "estimate" ? "estimate" : "interview",
       };
     } catch {
       return defaultState();
@@ -145,35 +141,9 @@
     return [...(selection?.requiredBy?.get(featureId) || [])].filter((id) => selection.selected.has(id));
   }
 
-  function choiceEntries() {
-    return Catalog.questions.flatMap((question) => [...question.choices, {
-      id: "none",
-      label: "該当なし・まだ不明",
-      features: [],
-    }].map((choice) => ({
-      ...choice,
-      key: `${question.id}:${choice.id}`,
-      questionTitle: question.title,
-    })));
-  }
-
-  function answerFeatures() {
-    const selectedAnswers = new Set(state.answers);
-    return new Set(choiceEntries()
-      .filter((choice) => selectedAnswers.has(choice.key))
-      .flatMap((choice) => choice.features));
-  }
-
   function directIds() {
     const excluded = new Set(state.excluded);
-    return new Set([...state.manual, ...answerFeatures(), ...mandatoryFeatureIds].filter((id) => isMandatoryFeature(id) || !excluded.has(id)));
-  }
-
-  function answerSources(featureId) {
-    const selectedAnswers = new Set(state.answers);
-    return choiceEntries()
-      .filter((choice) => selectedAnswers.has(choice.key) && choice.features.includes(featureId))
-      .map((choice) => choice.label);
+    return new Set([...state.manual, ...mandatoryFeatureIds].filter((id) => isMandatoryFeature(id) || !excluded.has(id)));
   }
 
   function saveState() {
@@ -241,11 +211,6 @@
     return Engine.calculateDurationMonths(hours, state.hoursPerMonth, ESTIMATE_TEAM_SIZE);
   }
 
-  function questionProgress() {
-    const answered = new Set(state.answers.map((key) => key.split(":")[0]));
-    return { answered: answered.size, total: Catalog.questions.length, unanswered: Math.max(0, Catalog.questions.length - answered.size) };
-  }
-
   function names(ids, limit = 6) {
     const map = featureMap();
     const values = ids.map((id) => displayName(map.get(id) || id));
@@ -271,53 +236,6 @@
     } else {
       setImpact(`${label}：${price}`, "他の項目でも使う準備は、まだ必要なため残っています。", delta <= 0);
     }
-  }
-
-  function switchPage(page) {
-    state.activePage = page === "estimate" ? "estimate" : "interview";
-    document.querySelectorAll("[data-page]").forEach((button) => {
-      const active = button.dataset.page === state.activePage;
-      button.setAttribute("aria-selected", String(active));
-      button.tabIndex = active ? 0 : -1;
-    });
-    ["interview", "estimate"].forEach((name) => {
-      const panel = el(`page-${name}`);
-      const active = name === state.activePage;
-      panel.hidden = !active;
-      panel.classList.toggle("is-active", active);
-    });
-    saveState();
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }
-
-  function renderQuestions() {
-    const answers = new Set(state.answers);
-    el("questions").innerHTML = Catalog.questions.map((question, index) => `
-      <section class="question-card">
-        <div class="question-number">${String(index + 1).padStart(2, "0")}</div>
-        <div>
-          <h3>${escapeHtml(question.title)}</h3>
-          <p>${escapeHtml(question.help)}</p>
-          <div class="choice-grid">${[...question.choices, { id: "none", label: "該当なし・まだ不明" }].map((choice) => {
-            const key = `${question.id}:${choice.id}`;
-            return `<label><input type="checkbox" data-answer-key="${key}" ${answers.has(key) ? "checked" : ""}><span>${escapeHtml(choice.label)}</span></label>`;
-          }).join("")}</div>
-        </div>
-      </section>`).join("");
-  }
-
-  function renderInterviewSummary() {
-    el("interview-count").textContent = `${selection.selected.size}件`;
-    el("interview-cost").textContent = money.format(estimate.totalCost);
-    const answerCount = state.answers.filter((key) => !key.endsWith(":none")).length;
-    const progress = questionProgress();
-    el("interview-note").textContent = answerCount
-      ? `${answerCount}個の該当回答から候補を作成中。${progress.answered}/${progress.total}問を確認済みです。`
-      : `該当項目を選ぶと自動更新されます。${progress.answered}/${progress.total}問を確認済みです。`;
-    el("interview-progress").textContent = progress.unanswered
-      ? `未確認が${progress.unanswered}問あります。各質問で該当項目または「該当なし・まだ不明」を選んでください。`
-      : "全質問を確認済みです。必要な作業と金額を確認して次へ進めます。";
-    el("go-estimate").classList.toggle("has-warning", progress.unanswered > 0);
   }
 
   function renderSummary() {
@@ -355,8 +273,6 @@
   function featureSource(featureId) {
     if (isMandatoryFeature(featureId)) return { label: "必須固定", className: "mandatory" };
     if (state.manual.includes(featureId)) return { label: "商談で選択", className: "direct" };
-    const sources = answerSources(featureId);
-    if (sources.length && !state.excluded.includes(featureId)) return { label: `初回回答：${sources[0]}`, className: "answer" };
     if (selection.automatic.has(featureId)) return { label: "一緒に必要", className: "auto" };
     return null;
   }
@@ -594,7 +510,6 @@
     const errors = Engine.validateCatalog(allFeatures());
     if (errors.length) setImpact("見積項目を確認してください", errors[0], true);
     ({ selection, estimate, pricingInfo } = compute());
-    renderInterviewSummary();
     renderSummary();
     renderFeatureTree();
     renderDependencyInspector();
@@ -604,31 +519,6 @@
     el("issuer-name").value = state.issuerName;
     el("auto-save").checked = Boolean(state.autoSave);
     saveState();
-  }
-
-  function toggleAnswer(answerKey, checked) {
-    const before = compute();
-    const answers = new Set(state.answers);
-    const questionId = answerKey.split(":")[0];
-    if (checked) {
-      [...answers].filter((key) => key.startsWith(`${questionId}:`)).forEach((key) => {
-        if (answerKey.endsWith(":none") || key.endsWith(":none")) answers.delete(key);
-      });
-      answers.add(answerKey);
-    } else {
-      answers.delete(answerKey);
-    }
-    state.answers = [...answers];
-    const choice = choiceEntries().find((item) => item.key === answerKey);
-    if (checked && choice) {
-      const excluded = new Set(state.excluded);
-      choice.features.forEach((id) => excluded.delete(id));
-      state.excluded = [...excluded];
-    }
-    const after = compute();
-    describeChange(before, after, `${choice?.label || "回答"}を${checked ? "選択" : "解除"}`);
-    renderQuestions();
-    renderAll();
   }
 
   function setFeature(featureId, checked, label) {
@@ -789,8 +679,7 @@
           ...base,
           ...parsed,
           manual: Array.isArray(parsed.manual) ? parsed.manual : [],
-          answers: Array.isArray(parsed.answers) ? parsed.answers : [],
-          excluded: Array.isArray(parsed.excluded) ? parsed.excluded : [],
+            excluded: Array.isArray(parsed.excluded) ? parsed.excluded : [],
           customFeatures: normalizeCustomFeatures(parsed.customFeatures),
           profileRates: base.profileRates,
           contingencies: { company: Number(parsed.contingencies?.company ?? base.contingencies.company) },
@@ -800,8 +689,6 @@
           createdAt: String(parsed.createdAt || base.createdAt),
           validUntil: String(parsed.validUntil || base.validUntil),
         };
-        renderQuestions();
-        switchPage("estimate");
         setImpact("案件データを読み込みました", "見積項目、金額、メモを復元しました。");
         renderAll();
       } catch {
@@ -811,41 +698,7 @@
     reader.readAsText(file);
   }
 
-  function requestEstimatePage() {
-    const progress = questionProgress();
-    if (progress.unanswered > 0 && !window.confirm(`未確認の質問が${progress.unanswered}問あります。参考精度が低い状態で見積画面へ進みますか？`)) return;
-    switchPage("estimate");
-  }
-
   function bindEvents() {
-    document.querySelector(".page-nav").addEventListener("click", (event) => {
-      const button = event.target.closest("[data-page]");
-      if (button) button.dataset.page === "estimate" ? requestEstimatePage() : switchPage("interview");
-    });
-    document.querySelector(".page-nav").addEventListener("keydown", (event) => {
-      if (!event.target.matches('[role="tab"]') || !["ArrowLeft", "ArrowRight"].includes(event.key)) return;
-      event.preventDefault();
-      const targetPage = event.target.dataset.page === "interview" ? "estimate" : "interview";
-      const target = document.querySelector(`[data-page="${targetPage}"]`);
-      target.focus();
-      target.click();
-    });
-    el("go-estimate").addEventListener("click", requestEstimatePage);
-
-    el("questions").addEventListener("change", (event) => {
-      if (event.target.matches("[data-answer-key]")) toggleAnswer(event.target.dataset.answerKey, event.target.checked);
-    });
-    el("clear-answers").addEventListener("click", () => {
-      if (!state.answers.length) return;
-      if (!window.confirm("ヒアリング回答だけをすべてクリアしますか？見積画面で直接選んだ項目は残ります。")) return;
-      const before = compute();
-      state.answers = [];
-      renderQuestions();
-      const after = compute();
-      describeChange(before, after, "ヒアリング回答をクリア");
-      renderAll();
-    });
-
     el("feature-tree").addEventListener("change", (event) => {
       if (event.target.matches("[data-feature-toggle]")) setFeature(event.target.dataset.featureToggle, event.target.checked);
       if (event.target.matches("[data-branch-toggle]")) toggleBranch(event.target.dataset.branchToggle, event.target.checked);
@@ -899,20 +752,16 @@
       window.print();
     });
     el("reset-project").addEventListener("click", () => {
-      if (!window.confirm("案件名、回答、見積項目、単価をすべて初期化しますか？")) return;
+      if (!window.confirm("案件名、見積項目、メモをすべて初期化しますか？")) return;
       state = defaultState();
       localStorage.removeItem(STORAGE_KEY);
       localStorage.removeItem(STORAGE_CONSENT_KEY);
-      renderQuestions();
-      switchPage("interview");
       renderAll();
     });
   }
 
-  renderQuestions();
   renderCustomHours();
   renderCustomDependencies();
   bindEvents();
-  switchPage(state.activePage);
   renderAll();
 })();

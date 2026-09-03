@@ -372,115 +372,6 @@
 
   features.forEach((feature) => { feature.plainName = plainNames[feature.id] || feature.name; });
 
-  const questions = [
-    {
-      id: "audience",
-      title: "誰が使いますか？",
-      help: "使う人をすべて選んでください。対象によって画面と入口が変わります。",
-      choices: [
-        { id: "staff", label: "社内スタッフ", features: ["responsive-shell", "email-login", "role-permissions"] },
-        { id: "partners", label: "取引先・協力会社", features: ["customer-portal-ui", "external-portal-access"] },
-        { id: "customers", label: "一般顧客", features: ["customer-portal-ui", "email-login"] },
-        { id: "many-companies", label: "複数企業へ提供", features: ["organization-tenancy", "theme-ui"] },
-      ],
-    },
-    {
-      id: "device",
-      title: "どこで、どの端末で使いますか？",
-      help: "事務所か現場か、通信環境はどうかを選んでください。",
-      choices: [
-        { id: "web", label: "PC・スマホのブラウザ", features: ["responsive-shell", "web-deploy"] },
-        { id: "field", label: "現場のスマホで使う", features: ["pwa", "camera-capture"] },
-        { id: "offline", label: "電波の届かない場所でも入力する", features: ["offline-sync"] },
-        { id: "store", label: "アプリストアで配布する", features: ["native-app", "push-notification"] },
-      ],
-    },
-    {
-      id: "data",
-      title: "登録した情報をどう扱いますか？",
-      help: "探し方、変更履歴の要否、既存データの移行を選んでください。",
-      choices: [
-        { id: "records", label: "一覧と詳細で見る", features: ["list-detail-ui", "form-ui"] },
-        { id: "search", label: "条件で絞り込んで探す", features: ["advanced-search-ui"] },
-        { id: "history", label: "変更履歴を残し、前の内容に戻せる", features: ["history-versioning", "audit-log"] },
-        { id: "excel", label: "既存のExcel・CSVを取り込む", features: ["import-export", "data-migration"] },
-      ],
-    },
-    {
-      id: "media",
-      title: "写真や書類を扱いますか？",
-      help: "添付するファイルの種類と、現場撮影の要否を選んでください。",
-      choices: [
-        { id: "files", label: "書類ファイルを添付する", features: ["file-upload"] },
-        { id: "photos", label: "写真を複数添付する", features: ["image-upload"] },
-        { id: "camera", label: "その場で撮影して登録する", features: ["camera-capture"] },
-        { id: "video", label: "動画を添付する", features: ["video-upload"] },
-      ],
-    },
-    {
-      id: "workflow",
-      title: "案件の進捗を管理しますか？",
-      help: "着手から完了までの状態管理と、承認の流れを選んでください。",
-      choices: [
-        { id: "status", label: "未対応・対応中・完了で管理する", features: ["workflow-engine"] },
-        { id: "approval", label: "承認を経て次へ進める", features: ["approval-flow"] },
-        { id: "schedule", label: "予約と空き状況を管理する", features: ["booking-flow"] },
-        { id: "project", label: "顧客・案件・対応履歴を管理する", features: ["crm"] },
-      ],
-    },
-    {
-      id: "money",
-      title: "支払いや購入など、決済に関する機能は必要ですか？",
-      help: "見積・請求、都度の決済、継続課金から選んでください。",
-      choices: [
-        { id: "estimate", label: "見積書・請求書を作成する", features: ["estimate-invoice"] },
-        { id: "payment", label: "クレジットカードで決済する", features: ["payment-integration"] },
-        { id: "subscription", label: "月額・年額で継続課金する", features: ["subscription"] },
-        { id: "order", label: "商品・在庫・注文を管理する", features: ["ecommerce"] },
-      ],
-    },
-    {
-      id: "output",
-      title: "成果物をどう渡しますか？",
-      help: "顧客に渡す書類、報告書、社内で見る集計を選んでください。",
-      choices: [
-        { id: "pdf", label: "PDFで出力する", features: ["pdf-generator"] },
-        { id: "report", label: "写真付き報告書を自動作成する", features: ["report-generator", "image-upload"] },
-        { id: "dashboard", label: "件数・金額をグラフで表示する", features: ["dashboard-ui"] },
-        { id: "export", label: "Excel・CSVで書き出す", features: ["import-export"] },
-      ],
-    },
-    {
-      id: "communication",
-      title: "連絡やお知らせをどう届けますか？",
-      help: "連絡手段と、既存カレンダーとの連携の要否を選んでください。",
-      choices: [
-        { id: "email", label: "メールで送信する", features: ["notification-center", "email-integration"] },
-        { id: "push", label: "スマホにお知らせを出す", features: ["push-notification"] },
-        { id: "message", label: "チャットへ通知する", features: ["messaging-integration"] },
-        { id: "calendar", label: "カレンダーへ予定を登録する", features: ["calendar-integration"] },
-      ],
-    },
-    {
-      id: "governance",
-      title: "運用を続けるうえで何が必要ですか？",
-      help: "管理者の権限と、記録・点検・復旧の備えを選んでください。",
-      choices: [
-        { id: "admin", label: "管理者が設定を変更する", features: ["admin-ui", "master-data"] },
-        { id: "audit", label: "記録・点検・復旧まで備える", features: ["audit-log", "security-review", "disaster-recovery"] },
-      ],
-    },
-    {
-      id: "delivery",
-      title: "導入の前後にどんな支援が必要ですか？",
-      help: "公開前の確認と、公開後の支援の要否を選んでください。",
-      choices: [
-        { id: "standard-qa", label: "公開前に動作と性能を確認する", features: ["qa-baseline", "performance-tests"] },
-        { id: "support", label: "説明会・手順書と公開後の対応", features: ["documentation-training", "uat-support", "support-operation", "release-management"] },
-      ],
-    },
-  ];
-
   const presets = [
     { id: "business-web", name: "社内業務管理", features: ["project-management", "list-detail-ui", "form-ui", "advanced-search-ui", "email-login", "role-permissions", "admin-ui", "qa-baseline", "release-management"] },
     { id: "customer-service", name: "顧客向けWebサービス", features: ["project-management", "customer-portal-ui", "email-login", "notification-center", "email-integration", "admin-ui", "qa-baseline", "security-review", "release-management"] },
@@ -547,5 +438,5 @@
     ] },
   ];
 
-  return { layers, plainLayers, plainNames, roles, features, questions, presets, rateProfiles, featureHierarchy, priceMasterMeta, mandatoryFeatureIds, mandatoryReasons };
+  return { layers, plainLayers, plainNames, roles, features, presets, rateProfiles, featureHierarchy, priceMasterMeta, mandatoryFeatureIds, mandatoryReasons };
 });

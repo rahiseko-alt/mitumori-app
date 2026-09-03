@@ -12,7 +12,7 @@
     <div>
       <p class="eyebrow">非エンジニア向け・商談支援</p>
       <h1>開発見積ナビ</h1>
-      <p class="subtitle">初回は「何を実現したいか」を聞き、2回目以降はチェックだけで見積を調整できます。</p>
+      <p class="subtitle">やりたいことをチェックすると、必要な作業と概算費用がその場で出ます。</p>
     </div>
     <div class="header-fields">
       <label>
@@ -38,44 +38,11 @@
     </div>
   </header>
 
-  <nav class="page-nav" aria-label="商談フェーズ" role="tablist">
-    <button id="tab-interview" type="button" role="tab" data-page="interview" aria-controls="page-interview" aria-selected="true">
-      <span>1ページ目</span><strong>初回ヒアリング</strong><small>初回商談で使う</small>
-    </button>
-    <button id="tab-estimate" type="button" role="tab" data-page="estimate" aria-controls="page-estimate" aria-selected="false" tabindex="-1">
-      <span>2ページ目</span><strong>やりたいこと別見積</strong><small>2回目以降で使う</small>
-    </button>
-  </nav>
-
   <main>
-    <section id="page-interview" class="page-panel is-active" role="tabpanel" aria-labelledby="tab-interview">
-      <div class="phase-intro">
-        <div>
-          <p class="step">1ページ目・初回商談</p>
-          <h2 id="interview-heading">お客様が実現したいことを聞く</h2>
-          <p>誰が、どこで、何をしたいかを順に確認します。回答から、実現に必要な作業と費用を自動で整理します。</p>
-        </div>
-        <button id="clear-answers" type="button" class="secondary">回答をクリア</button>
-      </div>
-
-      <section class="interview-preview" aria-live="polite">
-        <div><span>見積に入りそうな項目</span><strong id="interview-count">0件</strong></div>
-        <div><span>現時点の概算（消費税別）</span><strong id="interview-cost">￥0</strong></div>
-        <p id="interview-note">回答すると自動で更新されます。</p>
-      </section>
-
-      <div id="questions" class="question-list"></div>
-
-      <div class="next-page-bar">
-        <div><strong>初回ヒアリングが終わったら</strong><span id="interview-progress">未回答の質問があります。各質問で該当項目または「該当なし・まだ不明」を選んでください。</span></div>
-        <button id="go-estimate" type="button" class="primary">やりたいこと別見積を開く →</button>
-      </div>
-    </section>
-
-    <section id="page-estimate" class="page-panel" role="tabpanel" aria-labelledby="tab-estimate" hidden>
+    <section id="page-estimate">
       <section class="estimate-sticky-total" aria-label="追従する見積金額">
         <div class="sticky-total-heading">
-          <span>2ページ目・現在の見積</span>
+          <span>現在の見積</span>
           <strong>合計金額</strong>
         </div>
         <div class="sticky-total-amount">
@@ -87,8 +54,8 @@
 
       <div class="phase-intro">
         <div>
-          <p class="step">2ページ目・2回目以降の商談</p>
-          <h2 id="estimate-heading">やりたいことをチェックして見積を詰める</h2>
+          
+          <h2 id="estimate-heading">やりたいことをチェックして見積を作る</h2>
           <p>チェックの変更はその場で金額へ反映されます。表示金額は参考概算・消費税別です。上のまとまりを外すと、その下もまとめて外れます。</p>
         </div>
         <div class="action-row">
