@@ -144,11 +144,30 @@
   ];
 
   // DATABANK「価格表 機能別マスタ」（作成日 2026-06-29）との対応表。
-  // 原本に直接対応する34項目は提示単価を維持する。
+  // 原本34項目と査定62項目は、項目間の相対関係を決める基準値として保持する。
+  // 提示価格は、この基準値へ一律の縮小率を掛けて算出する。項目ごとの個別値引きはしない。
+  //
+  // 縮小率は「一般的なフルスタックWeb案件」を基準に決めた。
+  // プリセット「顧客向けWebサービス」（依存込み31項目）の合計が1,000,000円になる値である。
+  // 価格水準だけを変えたい場合は PRICE_SCALE のみを触る。基準値表は変更しない。
+  const PRICE_SCALE = 0.36255;
+  const PRICE_UNIT = 5000;
+
+  const scalePrice = (value) => {
+    const amount = Number(value || 0);
+    if (!(amount > 0)) return 0;
+    return Math.max(PRICE_UNIT, Math.round((amount * PRICE_SCALE) / PRICE_UNIT) * PRICE_UNIT);
+  };
+
   const priceMasterMeta = {
     name: "価格表 機能別マスタ",
     createdAt: "2026-06-29",
     maintenanceRate: 10,
+    priceScale: PRICE_SCALE,
+    priceUnit: PRICE_UNIT,
+    scaleBasisPresetId: "customer-service",
+    scaleBasisTotal: 1000000,
+    scaleNote: "基準値へ一律の縮小率を掛け、5,000円単位に丸めた提示価格です。項目間の相対関係は基準値のまま保っています。",
   };
 
   const priceMasterByFeature = {
@@ -273,7 +292,15 @@
     if (!feature.priceStatus) feature.priceStatus = "master";
     if (!feature.pricingClass) feature.pricingClass = "atomic";
     if (!feature.priceBasis) feature.priceBasis = `DATABANK原本「${feature.priceSourceName}」の提示単価。`;
-    if (!feature.priceIntent) feature.priceIntent = "ユーザー提示の原本価格を変更せず、そのまま採用する。";
+    if (!feature.priceIntent) feature.priceIntent = "原本価格を基準値として採用し、一律の縮小率だけを掛ける。";
+
+    // 基準値を basePrice に残し、画面・CSVへ出す fixedPrice は縮小後の提示価格にする。
+    feature.basePrice = Number(feature.fixedPrice || 0);
+    feature.fixedPrice = scalePrice(feature.basePrice);
+    if (Number.isFinite(Number(feature.dependencyPrice))) {
+      feature.baseDependencyPrice = Number(feature.dependencyPrice);
+      feature.dependencyPrice = scalePrice(feature.baseDependencyPrice);
+    }
   });
 
   // 難易度指数は価格とは独立した比較指標。fixedPrice / priceSize は変更しない。
@@ -438,5 +465,5 @@
     ] },
   ];
 
-  return { layers, plainLayers, plainNames, roles, features, presets, rateProfiles, featureHierarchy, priceMasterMeta, mandatoryFeatureIds, mandatoryReasons };
+  return { layers, plainLayers, plainNames, roles, features, presets, rateProfiles, featureHierarchy, priceMasterMeta, mandatoryFeatureIds, mandatoryReasons, scalePrice };
 });
