@@ -246,7 +246,7 @@
     el("summary-count").textContent = `${selection.selected.size}件`;
     el("summary-count-detail").textContent = `必須${mandatoryCount}・自分で選択${selection.direct.size - mandatoryCount}・一緒に必要${selection.automatic.size}`;
     el("summary-hours").textContent = `${number.format(estimate.baseHours)}時間`;
-    el("summary-months").textContent = `1人換算 ${number.format(estimate.baseHours / state.hoursPerMonth)}か月分`;
+    el("summary-months").textContent = "価格には反映しない参考値";
     el("summary-cost").textContent = money.format(estimate.totalCost);
     el("summary-price-note").textContent = `原本単価${masterCount}件・査定単価${assessedCount}件／保守目安 ${money.format(maintenanceEstimate())}は別途`;
     el("sticky-summary-cost").textContent = money.format(estimate.totalCost);
@@ -464,9 +464,9 @@
 
     el("role-table").querySelector("tbody").innerHTML = Engine.ROLES.map((role) => {
       const hours = estimate.roleHours[role];
-      return `<tr><td>${escapeHtml(Catalog.roles[role])}</td><td class="numeric">${number.format(hours)}時間</td><td class="numeric">${number.format(hours / state.hoursPerMonth)}</td></tr>`;
+      return `<tr><td>${escapeHtml(Catalog.roles[role])}</td><td class="numeric">${number.format(hours)}時間</td></tr>`;
     }).join("")
-      + `<tr class="total-row"><th>参考工数合計</th><th class="numeric">${number.format(estimate.baseHours)}時間</th><th class="numeric">${number.format(estimate.baseHours / state.hoursPerMonth)}</th></tr>`;
+      + `<tr class="total-row"><th>参考工数合計</th><th class="numeric">${number.format(estimate.baseHours)}時間</th></tr>`;
 
     const map = featureMap();
     el("feature-table").querySelector("tbody").innerHTML = [...selection.selected]
@@ -570,11 +570,19 @@
     renderAll();
   }
 
+  function renderCustomPriceHint() {
+    const basePrice = Math.max(0, Number(el("custom-price").value || 0));
+    el("custom-price-converted").textContent = basePrice > 0
+      ? `提示価格 ${money.format(Catalog.scalePrice(basePrice))}（カタログと同じ縮小率を掛けます）`
+      : "0のままなら「該当なし（仮0円）」として登録します";
+  }
+
   function openCustomDialog() {
     el("custom-feature-form").reset();
     customDependencyDraft = new Set();
     renderCustomHours();
     renderCustomDependencies();
+    renderCustomPriceHint();
     el("custom-error").textContent = "";
     el("custom-dialog").showModal();
   }
@@ -584,7 +592,9 @@
     const name = el("custom-name").value.trim();
     const description = el("custom-description").value.trim() || "この案件だけの追加項目です。";
     const layer = el("custom-layer").value;
-    const fixedPrice = Math.max(0, Number(el("custom-price").value || 0));
+    // 手入力も カタログと同じ縮小率を通す。生値のまま入れると、この項目だけ相対価格が跳ね上がる。
+    const basePrice = Math.max(0, Number(el("custom-price").value || 0));
+    const fixedPrice = Catalog.scalePrice(basePrice);
     const priceSize = el("custom-price-size").value || "—";
     const hours = Object.fromEntries(Engine.ROLES.map((role) => [role, Number(document.querySelector(`[data-custom-hour="${role}"]`).value || 0)]));
     if (!name) { el("custom-error").textContent = "項目名を入力してください。"; return; }
@@ -592,10 +602,10 @@
     state.customFeatures.push({
       id, layer, name, plainName: name, description, hours,
       dependencies: [...customDependencyDraft], tags: ["独自"],
-      fixedPrice, priceSize,
+      fixedPrice, basePrice, priceSize,
       priceSourceName: fixedPrice > 0 ? "案件固有（手入力）" : "該当なし（仮0円）",
       priceStatus: fixedPrice > 0 ? "manual" : "temporary",
-      priceBasis: fixedPrice > 0 ? "商談で入力した案件固有単価。" : "案件固有項目のため未査定。",
+      priceBasis: fixedPrice > 0 ? `商談で入力した案件固有の一般単価 ${money.format(basePrice)}（縮小前の基準値）。` : "案件固有項目のため未査定。",
       priceIntent: fixedPrice > 0 ? "合意した案件固有条件を反映する。" : "正式見積までに個別査定する。",
     });
     state.manual.push(id);
@@ -717,6 +727,7 @@
       if (focus) { state.dependencyFocus = focus.dataset.focus; renderDependencyInspector(); saveState(); }
     });
     el("feature-search").addEventListener("input", renderFeatureTree);
+    el("custom-price").addEventListener("input", renderCustomPriceHint);
     el("selected-only").addEventListener("change", renderFeatureTree);
 
     el("project-name").addEventListener("change", (event) => { state.projectName = event.target.value.trim() || "新規システム"; renderAll(); });
