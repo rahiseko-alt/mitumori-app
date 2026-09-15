@@ -23,8 +23,9 @@ test("参考概算は消費税別と画面・CSV・印刷で明示する", () =>
   assert.match(app, /相対参考単価合計（消費税別）/);
 });
 
-test("原本単価と査定単価を維持し、難易度指数と必須固定を示す", () => {
-  assert.match(html, /非対応62項目は.+査定/);
+test("基準値と一律縮小の関係を示し、難易度指数と必須固定を示す", () => {
+  assert.match(html, /原本対応34項目と査定62項目を基準値とし/);
+  assert.match(html, /一律の縮小率/);
   assert.match(html, /難易度指数（価格は変更しません）/);
   assert.match(html, /現在の固定単価、原本単価、査定単価のいずれも変更しません/);
   assert.match(app, /priceStatus === "assessed"/);

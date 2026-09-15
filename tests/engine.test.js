@@ -118,18 +118,26 @@ test("非エンジニア向け項目名が全96機能に設定されている", 
   assert.deepEqual(Catalog.features.filter((item) => technicalWords.test(item.plainName)), []);
 });
 
-test("原本34項目を維持し、非対応62項目も正の査定単価を持つ", () => {
+test("原本34項目と査定62項目の基準値を保ち、一律の縮小率で提示価格を出す", () => {
   const mapped = Catalog.features.filter((item) => item.priceStatus === "master");
   const assessed = Catalog.features.filter((item) => item.priceStatus === "assessed");
 
   assert.equal(mapped.length, 34);
   assert.equal(assessed.length, 62);
-  assert.equal(Catalog.features.find((item) => item.id === "requirements").fixedPrice, 50_000);
-  assert.equal(Catalog.features.find((item) => item.id === "admin-ui").fixedPrice, 250_000);
-  assert.equal(Catalog.features.find((item) => item.id === "native-app").fixedPrice, 300_000);
-  assert.equal(Catalog.features.find((item) => item.id === "architecture").fixedPrice, 60_000);
-  assert.equal(Catalog.features.reduce((sum, item) => sum + item.fixedPrice, 0), 10_530_000);
+  assert.equal(Catalog.features.find((item) => item.id === "requirements").basePrice, 50_000);
+  assert.equal(Catalog.features.find((item) => item.id === "admin-ui").basePrice, 250_000);
+  assert.equal(Catalog.features.find((item) => item.id === "native-app").basePrice, 300_000);
+  assert.equal(Catalog.features.find((item) => item.id === "architecture").basePrice, 60_000);
+  assert.equal(Catalog.features.reduce((sum, item) => sum + item.basePrice, 0), 10_530_000);
+
+  assert.equal(Catalog.features.find((item) => item.id === "requirements").fixedPrice, 20_000);
+  assert.equal(Catalog.features.find((item) => item.id === "admin-ui").fixedPrice, 90_000);
+  assert.equal(Catalog.features.find((item) => item.id === "native-app").fixedPrice, 110_000);
+  assert.equal(Catalog.features.find((item) => item.id === "architecture").fixedPrice, 20_000);
+  assert.equal(Catalog.features.reduce((sum, item) => sum + item.fixedPrice, 0), 3_845_000);
   assert.deepEqual(Catalog.features.filter((item) => item.fixedPrice <= 0), []);
+  assert.deepEqual(Catalog.features.filter((item) => item.fixedPrice % Catalog.priceMasterMeta.priceUnit !== 0), []);
+  assert.deepEqual(Catalog.features.filter((item) => item.fixedPrice !== Catalog.scalePrice(item.basePrice)), []);
   assert.deepEqual(Catalog.features.filter((item) => !item.priceBasis || !item.priceIntent), []);
 });
 
@@ -138,7 +146,7 @@ test("難易度指数は価格を変更せず、基本工程を指数1にする"
   assert.equal(Catalog.features.find((item) => item.id === "information-architecture").difficultyIndex, 1);
   assert.equal(Catalog.features.find((item) => item.id === "native-app").difficultyIndex, 5);
   assert.deepEqual(Catalog.features.filter((item) => !Number.isInteger(item.difficultyIndex) || item.difficultyIndex < 1 || item.difficultyIndex > 5), []);
-  assert.equal(Catalog.features.find((item) => item.id === "requirements").fixedPrice, 50_000);
+  assert.equal(Catalog.features.find((item) => item.id === "requirements").fixedPrice, 20_000);
 });
 
 test("必須固定6項目は不要な画面・DB・CI/CDを自動追加しない", () => {
@@ -151,26 +159,26 @@ test("必須固定6項目は不要な画面・DB・CI/CDを自動追加しない
   assert.deepEqual([...selection.selected], ["qa-baseline"]);
   assert.deepEqual(Catalog.features.find((item) => item.id === "qa-baseline").dependencies, []);
   assert.deepEqual(Catalog.features.find((item) => item.id === "release-management").dependencies, []);
-  assert.equal(pricing.pricingInfo.get("qa-baseline").appliedPrice, 120_000);
+  assert.equal(pricing.pricingInfo.get("qa-baseline").appliedPrice, 45_000);
   const qaWithUnit = Engine.computeSelection(Catalog.features, ["qa-baseline", "unit-tests"]);
   assert.equal(Engine.applyPricingRules(Catalog.features, qaWithUnit).pricingInfo.get("unit-tests").appliedPrice, 0);
 });
 
-test("外部API基盤は単独選択30万円、自動追加12万円で配賦する", () => {
+test("外部API基盤は単独選択11万円、自動追加4.5万円で配賦する", () => {
   const direct = Engine.computeSelection(Catalog.features, ["external-api"]);
   const automatic = Engine.computeSelection(Catalog.features, ["webhooks"]);
 
-  assert.equal(Engine.applyPricingRules(Catalog.features, direct).pricingInfo.get("external-api").appliedPrice, 300_000);
-  assert.equal(Engine.applyPricingRules(Catalog.features, automatic).pricingInfo.get("external-api").appliedPrice, 120_000);
+  assert.equal(Engine.applyPricingRules(Catalog.features, direct).pricingInfo.get("external-api").appliedPrice, 110_000);
+  assert.equal(Engine.applyPricingRules(Catalog.features, automatic).pricingInfo.get("external-api").appliedPrice, 45_000);
 });
 
 test("必須固定を含む代表5プリセットの依存込み金額を固定検証する", () => {
   const expected = {
-    "business-web": 2_310_000,
-    "customer-service": 2_730_000,
-    "field-photo": 2_990_000,
-    booking: 3_720_000,
-    saas: 3_760_000,
+    "business-web": 845_000,
+    "customer-service": 1_000_000,
+    "field-photo": 1_090_000,
+    booking: 1_365_000,
+    saas: 1_375_000,
   };
 
   for (const preset of Catalog.presets) {
@@ -192,4 +200,22 @@ test("固定単価がある場合は工数単価ではなく固定単価を合�
   assert.equal(result.baseHours, 200);
   assert.equal(result.baseCost, 40_000);
   assert.equal(result.totalCost, 40_000);
+});
+
+test("縮小率はフルスタック構成が100万円になる値で、全項目へ一律に効く", () => {
+  const meta = Catalog.priceMasterMeta;
+  assert.equal(meta.scaleBasisPresetId, "customer-service");
+  assert.equal(meta.scaleBasisTotal, 1_000_000);
+
+  const preset = Catalog.presets.find((item) => item.id === meta.scaleBasisPresetId);
+  const selection = Engine.computeSelection(Catalog.features, [...new Set([...preset.features, ...Catalog.mandatoryFeatureIds])]);
+  const pricing = Engine.applyPricingRules(Catalog.features, selection);
+  const estimate = Engine.calculateEstimate(pricing.features, selection.selected, Catalog.rateProfiles.company.rates, 0);
+  assert.equal(estimate.totalCost, meta.scaleBasisTotal);
+
+  // 一律縮小なので、基準値の大小関係は提示価格でも逆転しない。
+  const sorted = [...Catalog.features].sort((a, b) => a.basePrice - b.basePrice);
+  for (let index = 1; index < sorted.length; index += 1) {
+    assert.ok(sorted[index].fixedPrice >= sorted[index - 1].fixedPrice, `${sorted[index].id} が基準値の順序を崩しています`);
+  }
 });
