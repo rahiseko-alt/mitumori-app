@@ -17,23 +17,23 @@ test("自動保存は明示同意がない限り復元・保存しない", () =>
 });
 
 test("参考概算は消費税別と画面・CSV・印刷で明示する", () => {
-  assert.match(html, /相対参考単価合計（消費税別）/);
+  assert.match(html, /概算金額（消費税別）/);
   assert.match(html, /正式見積ではありません/);
-  assert.match(app, /参考概算・消費税別/);
-  assert.match(app, /相対参考単価合計（消費税別）/);
+  assert.match(app, /概算・消費税別/);
+  assert.match(app, /概算金額（消費税別）/);
 });
 
 test("基準値と一律縮小の関係を示し、難易度指数と必須固定を示す", () => {
-  assert.match(html, /原本対応34項目と査定62項目を基準値とし/);
-  assert.match(html, /一律の縮小率/);
-  assert.match(html, /難易度指数（価格は変更しません）/);
-  assert.match(html, /現在の固定単価、原本単価、査定単価のいずれも変更しません/);
+  assert.match(html, /価格表に対応する34項目と、規模・難易度・再利用性から査定した62項目を基準値とし/);
+  assert.match(html, /一律の調整率/);
+  assert.match(html, /難易度の目安（金額には影響しません）/);
+  assert.match(html, /この指標は説明・比較のためのもので、金額には一切影響しません/);
   assert.match(app, /priceStatus === "assessed"/);
   assert.match(app, /mandatoryFeatureIds/);
   assert.match(app, /isMandatoryFeature/);
   assert.match(app, /difficultyIndex/);
-  assert.match(app, /値付け根拠/);
-  assert.match(app, /値付け意図/);
+  assert.match(app, /値付けの根拠/);
+  assert.match(app, /値付けの考え方/);
   assert.match(app, /pricing-review-warning/);
   assert.doesNotMatch(html, /id="contingency"/);
 });

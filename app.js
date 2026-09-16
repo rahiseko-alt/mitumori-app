@@ -64,10 +64,10 @@
       ...feature,
       fixedPrice,
       priceSize: feature.priceSize || "—",
-      priceSourceName: feature.priceSourceName || (fixedPrice > 0 ? "案件固有（手入力）" : "該当なし（仮0円）"),
+      priceSourceName: feature.priceSourceName || (fixedPrice > 0 ? "案件固有（手入力）" : "未査定（要確認）"),
       priceStatus: feature.priceStatus || (fixedPrice > 0 ? "manual" : "temporary"),
-      priceBasis: feature.priceBasis || (fixedPrice > 0 ? "商談で入力した案件固有単価。" : "案件固有項目のため未査定。"),
-      priceIntent: feature.priceIntent || (fixedPrice > 0 ? "合意した案件固有条件を反映する。" : "正式見積までに個別査定する。"),
+      priceBasis: feature.priceBasis || (fixedPrice > 0 ? "商談時に入力した案件固有の金額です。" : "案件固有の項目のため、金額は未査定です。"),
+      priceIntent: feature.priceIntent || (fixedPrice > 0 ? "合意した案件固有の条件を反映します。" : "正式見積までに個別査定します。"),
     };
     });
 
@@ -197,7 +197,7 @@
   }
 
   function priceStatusLabel(feature) {
-    if (feature?.priceStatus === "master") return "原本単価";
+    if (feature?.priceStatus === "master") return "価格表単価";
     if (feature?.priceStatus === "assessed") return "査定単価";
     if (feature?.priceStatus === "manual") return "手入力単価";
     return "未査定";
@@ -234,7 +234,7 @@
     } else if (removed.length) {
       setImpact(`${label}：${price}`, `${removed.length}件解除：${names(removed)}`, true);
     } else {
-      setImpact(`${label}：${price}`, "他の項目でも使う準備は、まだ必要なため残っています。", delta <= 0);
+      setImpact(`${label}：${price}`, "他の項目でも使うため、関連項目は見積に残しています。", delta <= 0);
     }
   }
 
@@ -244,14 +244,14 @@
     const masterCount = [...selection.selected].filter((id) => map.get(id)?.priceStatus === "master").length;
     const assessedCount = [...selection.selected].filter((id) => map.get(id)?.priceStatus === "assessed").length;
     el("summary-count").textContent = `${selection.selected.size}件`;
-    el("summary-count-detail").textContent = `必須${mandatoryCount}・自分で選択${selection.direct.size - mandatoryCount}・一緒に必要${selection.automatic.size}`;
+    el("summary-count-detail").textContent = `必須${mandatoryCount}件・選択${selection.direct.size - mandatoryCount}件・自動追加${selection.automatic.size}件`;
     el("summary-hours").textContent = `${number.format(estimate.baseHours)}時間`;
-    el("summary-months").textContent = "価格には反映しない参考値";
+    el("summary-months").textContent = "金額の算出には使用していません";
     el("summary-cost").textContent = money.format(estimate.totalCost);
-    el("summary-price-note").textContent = `原本単価${masterCount}件・査定単価${assessedCount}件／保守目安 ${money.format(maintenanceEstimate())}は別途`;
+    el("summary-price-note").textContent = `価格表対応${masterCount}件・査定${assessedCount}件／年間保守費 ${money.format(maintenanceEstimate())}は別途`;
     el("sticky-summary-cost").textContent = money.format(estimate.totalCost);
     el("sticky-summary-count").textContent = `${selection.selected.size}項目（必須${mandatoryCount}・選択${selection.direct.size - mandatoryCount}・自動${selection.automatic.size}）`;
-    el("sticky-summary-note").textContent = `参考概算・消費税別／保守目安 ${money.format(maintenanceEstimate())}は別途`;
+    el("sticky-summary-note").textContent = `概算・消費税別／年間保守費 ${money.format(maintenanceEstimate())}は別途`;
     el("summary-duration").textContent = `${durationMonths(estimate.baseHours)}か月`;
     el("summary-team").textContent = "中小規模システム会社・平均3～4名で並行";
 
@@ -262,7 +262,7 @@
       .reduce((sum, id) => sum + Number(pricingInfo.get(id)?.appliedPrice || 0), 0);
     const warnings = [];
     if (directCost > 0 && automaticCost > directCost * 2) warnings.push("自動追加費が直接選択費の2倍を超えています");
-    if (selection.automatic.size > 15) warnings.push(`一緒に必要な項目が${selection.automatic.size}件あります`);
+    if (selection.automatic.size > 15) warnings.push(`自動追加された項目が${selection.automatic.size}件あります`);
     if (automaticFoundations > 1_500_000) warnings.push("共通基盤の自動追加が150万円を超えています");
     const warning = el("pricing-review-warning");
     warning.hidden = warnings.length === 0;
@@ -273,7 +273,7 @@
   function featureSource(featureId) {
     if (isMandatoryFeature(featureId)) return { label: "必須固定", className: "mandatory" };
     if (state.manual.includes(featureId)) return { label: "商談で選択", className: "direct" };
-    if (selection.automatic.has(featureId)) return { label: "一緒に必要", className: "auto" };
+    if (selection.automatic.has(featureId)) return { label: "自動追加", className: "auto" };
     return null;
   }
 
@@ -373,7 +373,7 @@
                 ${locked ? `<span class="check-lock" aria-label="${mandatory ? "標準工程として固定" : `${itemNumbers(parents) || "必要項目"}が使用中`}">🔒</span>` : ""}
                 <span class="tree-line"></span>
               </label>
-              <button type="button" class="feature-focus" data-focus="${feature.id}" aria-label="${escapeHtml(label)}を選ぶと一緒に必要になる項目を表示">
+              <button type="button" class="feature-focus" data-focus="${feature.id}" aria-label="${escapeHtml(label)}を選んだときに同時に必要となる項目を表示">
                 <span class="feature-title-line"><span class="item-number">#${itemNumber(feature)}</span> <span class="feature-name">${escapeHtml(label)}</span></span>
                 ${technicalName(feature) ? `<span class="technical-name">技術名：${escapeHtml(technicalName(feature))}</span>` : ""}
               </button>
@@ -384,10 +384,10 @@
             </div>
             <div class="feature-badges">
               ${source ? `<span class="badge ${source.className}">${escapeHtml(source.label)}</span>` : ""}
-              <span class="badge difficulty-badge" title="${escapeHtml(feature.difficultyReason || "価格とは別の比較指数です。")}">難易度指数 ${escapeHtml(feature.difficultyIndex || "—")}・${escapeHtml(feature.difficultyLabel || "—")}</span>
+              <span class="badge difficulty-badge" title="${escapeHtml(feature.difficultyReason || "金額とは別の比較指標です。")}">難易度指数 ${escapeHtml(feature.difficultyIndex || "—")}・${escapeHtml(feature.difficultyLabel || "—")}</span>
               <span class="badge ${temporaryPrice ? "price-temporary" : assessedPrice ? "price-assessed" : "price-master"}">${temporaryPrice ? "未査定" : `${escapeHtml(priceStatusLabel(feature))}・規模 ${escapeHtml(feature.priceSize)}`}</span>
               <span class="badge">${number.format(Engine.ROLES.reduce((sum, role) => sum + Number(feature.hours?.[role] || 0), 0))}時間</span>
-              ${(feature.dependencies || []).length ? `<span class="badge locked-badge">🔒 一緒に必要 ${feature.dependencies.length}件</span>` : `<span class="badge">この項目だけ</span>`}
+              ${(feature.dependencies || []).length ? `<span class="badge locked-badge">🔒 同時に必要 ${feature.dependencies.length}件</span>` : `<span class="badge">この項目だけ</span>`}
               ${isCustom ? `<button type="button" class="custom-delete" data-delete-custom="${feature.id}">追加項目を削除</button>` : ""}
             </div>
           </li>`;
@@ -449,12 +449,12 @@
     }
     const selected = selection.selected.has(feature.id);
     const metrics = directFeatureMetrics(feature);
-    el("dependency-help").innerHTML = `<strong>#${itemNumber(feature)} ${escapeHtml(displayName(feature))}</strong>${technicalName(feature) ? `<span class="technical-name">技術名：${escapeHtml(technicalName(feature))}</span>` : ""}<br>${selected ? "現在の見積に含まれています。下へ進むほど、一緒に必要になる準備です。" : "未選択です。チェックすると下の準備も一緒に追加されます。"}<span class="price-explanation"><b>難易度指数</b>${escapeHtml(feature.difficultyIndex || "—")}・${escapeHtml(feature.difficultyLabel || "—")}（価格とは連動しません）<b>価格区分</b>${escapeHtml(priceStatusLabel(feature))}／単独 ${money.format(metrics.standalonePrice)}${metrics.adjustmentReason ? `／適用 ${money.format(metrics.cost)}（${escapeHtml(metrics.adjustmentReason)}）` : ""}<b>根拠（金額は縮小前の基準値）</b>${escapeHtml(feature.priceBasis || "個別確認")}<b>意図</b>${escapeHtml(feature.priceIntent || "正式見積で確認する。")}</span>`;
+    el("dependency-help").innerHTML = `<strong>#${itemNumber(feature)} ${escapeHtml(displayName(feature))}</strong>${technicalName(feature) ? `<span class="technical-name">技術名：${escapeHtml(technicalName(feature))}</span>` : ""}<br>${selected ? "現在の見積に含まれています。下に進むほど、前提として必要になる作業です。" : "未選択です。チェックを入れると、下記の関連項目もあわせて追加されます。"}<span class="price-explanation"><b>難易度の目安</b>${escapeHtml(feature.difficultyIndex || "—")}・${escapeHtml(feature.difficultyLabel || "—")}（金額には影響しません）<b>単価の区分</b>${escapeHtml(priceStatusLabel(feature))}／単独 ${money.format(metrics.standalonePrice)}${metrics.adjustmentReason ? `／適用 ${money.format(metrics.cost)}（${escapeHtml(metrics.adjustmentReason)}）` : ""}<b>値付けの根拠（金額は調整前の基準値）</b>${escapeHtml(feature.priceBasis || "個別確認")}<b>値付けの考え方</b>${escapeHtml(feature.priceIntent || "正式見積時に個別確認します。")}</span>`;
     const tree = Engine.dependencyTree(allFeatures(), feature.id);
     el("dependency-tree").innerHTML = `<ul class="dependency-root">${renderDependencyNode(tree)}</ul>`;
     const parents = Engine.reverseDependents(allFeatures(), selection.selected, feature.id);
     el("reverse-dependencies").innerHTML = parents.length
-      ? `<strong>この準備を一緒に使っている項目</strong><div class="dependent-tags">${parents.map((id) => { const item = map.get(id); return `<button type="button" data-focus="${id}">#${itemNumber(id)} ${escapeHtml(displayName(item || id))}${technicalName(item) ? `<small>${escapeHtml(technicalName(item))}</small>` : ""}</button>`; }).join("")}</div>`
+      ? `<strong>この項目を前提としている項目</strong><div class="dependent-tags">${parents.map((id) => { const item = map.get(id); return `<button type="button" data-focus="${id}">#${itemNumber(id)} ${escapeHtml(displayName(item || id))}${technicalName(item) ? `<small>${escapeHtml(technicalName(item))}</small>` : ""}</button>`; }).join("")}</div>`
       : `<strong>他の項目との共用</strong><p>選択中の他の項目からは直接使われていません。</p>`;
   }
 
@@ -477,9 +477,9 @@
         const metrics = directFeatureMetrics(feature);
         const temporaryPrice = isTemporaryPrice(feature);
         const sourceText = `${priceStatusLabel(feature)}：${feature.priceSourceName || "案件固有"}${metrics.adjustmentReason ? `／${metrics.adjustmentReason}` : ""}`;
-        return `<tr class="${temporaryPrice ? "temporary-price-row" : feature.priceStatus === "assessed" ? "assessed-price-row" : ""}"><td>#${itemNumber(feature)}</td><td>${escapeHtml(source?.label || "一緒に必要")}</td><td>${escapeHtml(Catalog.plainLayers[feature.layer] || feature.layer)}</td><td>${escapeHtml(displayName(feature))}</td><td title="根拠（金額は縮小前の基準値）：${escapeHtml(feature.priceBasis || "")}&#10;意図：${escapeHtml(feature.priceIntent || "")}">${escapeHtml(sourceText)}</td><td title="${escapeHtml(feature.difficultyReason || "価格とは別の比較指数です。")}">指数${escapeHtml(feature.difficultyIndex || "—")}・${escapeHtml(feature.difficultyLabel || "—")}</td><td>${escapeHtml(feature.priceSize || "—")}</td><td class="numeric">${number.format(metrics.hours)}時間</td><td class="numeric">${money.format(metrics.cost)}${metrics.adjustmentReason ? `<small>（単独 ${money.format(metrics.standalonePrice)}）</small>` : ""}</td></tr>`;
+        return `<tr class="${temporaryPrice ? "temporary-price-row" : feature.priceStatus === "assessed" ? "assessed-price-row" : ""}"><td>#${itemNumber(feature)}</td><td>${escapeHtml(source?.label || "自動追加")}</td><td>${escapeHtml(Catalog.plainLayers[feature.layer] || feature.layer)}</td><td>${escapeHtml(displayName(feature))}</td><td title="値付けの根拠（金額は調整前の基準値）：${escapeHtml(feature.priceBasis || "")}&#10;意図：${escapeHtml(feature.priceIntent || "")}">${escapeHtml(sourceText)}</td><td title="${escapeHtml(feature.difficultyReason || "金額とは別の比較指標です。")}">難易度${escapeHtml(feature.difficultyIndex || "—")}・${escapeHtml(feature.difficultyLabel || "—")}</td><td>${escapeHtml(feature.priceSize || "—")}</td><td class="numeric">${number.format(metrics.hours)}時間</td><td class="numeric">${money.format(metrics.cost)}${metrics.adjustmentReason ? `<small>（単独 ${money.format(metrics.standalonePrice)}）</small>` : ""}</td></tr>`;
       }).join("") + (selection.selected.size
-        ? `<tr class="total-row"><th colspan="7">相対参考単価合計（消費税別）</th><th class="numeric">${number.format(estimate.baseHours)}時間</th><th class="numeric">${money.format(estimate.totalCost)}</th></tr><tr><th colspan="8">年間保守費目安（10%・別途）</th><th class="numeric">${money.format(maintenanceEstimate())}</th></tr>`
+        ? `<tr class="total-row"><th colspan="7">概算金額（消費税別）</th><th class="numeric">${number.format(estimate.baseHours)}時間</th><th class="numeric">${money.format(estimate.totalCost)}</th></tr><tr><th colspan="8">年間保守費の目安（10%・別途）</th><th class="numeric">${money.format(maintenanceEstimate())}</th></tr>`
         : `<tr><td colspan="9">見積項目が選択されていません。</td></tr>`);
 
     el("print-project-name").textContent = state.projectName || "—";
@@ -573,8 +573,8 @@
   function renderCustomPriceHint() {
     const basePrice = Math.max(0, Number(el("custom-price").value || 0));
     el("custom-price-converted").textContent = basePrice > 0
-      ? `提示価格 ${money.format(Catalog.scalePrice(basePrice))}（カタログと同じ縮小率を掛けます）`
-      : "0のままなら「該当なし（仮0円）」として登録します";
+      ? `見積単価 ${money.format(Catalog.scalePrice(basePrice))}（他の項目と同じ基準に合わせた金額です）`
+      : "0のままにすると「未査定（要確認）」として登録します";
   }
 
   function openCustomDialog() {
@@ -603,16 +603,16 @@
       id, layer, name, plainName: name, description, hours,
       dependencies: [...customDependencyDraft], tags: ["独自"],
       fixedPrice, basePrice, priceSize,
-      priceSourceName: fixedPrice > 0 ? "案件固有（手入力）" : "該当なし（仮0円）",
+      priceSourceName: fixedPrice > 0 ? "案件固有（手入力）" : "未査定（要確認）",
       priceStatus: fixedPrice > 0 ? "manual" : "temporary",
-      priceBasis: fixedPrice > 0 ? `商談で入力した案件固有の一般単価 ${money.format(basePrice)}（縮小前の基準値）。` : "案件固有項目のため未査定。",
-      priceIntent: fixedPrice > 0 ? "合意した案件固有条件を反映する。" : "正式見積までに個別査定する。",
+      priceBasis: fixedPrice > 0 ? `商談時に入力した相場金額 ${money.format(basePrice)}（調整前の基準値）。` : "案件固有の項目のため、金額は未査定です。",
+      priceIntent: fixedPrice > 0 ? "合意した案件固有の条件を反映します。" : "正式見積までに個別査定します。",
     });
     state.manual.push(id);
     state.excluded = state.excluded.filter((item) => item !== id);
     state.dependencyFocus = id;
     el("custom-dialog").close();
-    setImpact(`${name}を追加`, customDependencyDraft.size ? `一緒に必要な項目${customDependencyDraft.size}件も加えました。` : "この項目だけを追加しました。");
+    setImpact(`${name}を追加`, customDependencyDraft.size ? `同時に必要となる項目${customDependencyDraft.size}件もあわせて追加しました。` : "この項目だけを追加しました。");
     renderAll();
   }
 
@@ -654,13 +654,13 @@
       ["見積番号", state.estimateNumber],
       ["作成日", state.createdAt],
       ["有効期限", state.validUntil],
-      ["金額区分", "参考概算・消費税別"],
+      ["金額区分", "概算・消費税別"],
       ["価格マスタ", `${Catalog.priceMasterMeta.name}（${Catalog.priceMasterMeta.createdAt}）`],
       ["1人の月間作業時間", state.hoursPerMonth],
       ["年間保守費目安", `機能単価合計の${Catalog.priceMasterMeta.maintenanceRate}%前後・別途`],
       ["前提・除外事項・ヒアリングメモ", state.notes || "未入力"],
       [],
-      ["項目番号", "状態", "分類", "見積項目", "技術名", "価格表の対応項目", "規模", "価格状態", "値付け根拠（金額は縮小前の基準値）", "値付け意図", "価格調整", "基準値", "単独価格", "参考工数", "適用単価（消費税別）"],
+      ["項目番号", "状態", "分類", "見積項目", "技術名", "価格表の該当項目", "規模", "単価の区分", "値付けの根拠（金額は調整前の基準値）", "値付けの考え方", "価格調整", "基準値", "単独価格", "参考工数", "適用単価（消費税別）"],
     ];
     [...selection.selected].forEach((id) => {
       const feature = map.get(id);
@@ -670,8 +670,8 @@
     });
     rows.push(
       [],
-      ["", "相対参考単価合計（消費税別）", "", "", "", "", "", "", "", "", "", "", estimate.baseHours, estimate.totalCost],
-      ["", "年間保守費目安（10%・別途）", "", "", "", "", "", "", "", "", "", "", "", maintenanceEstimate()],
+      ["", "概算金額（消費税別）", "", "", "", "", "", "", "", "", "", "", estimate.baseHours, estimate.totalCost],
+      ["", "年間保守費の目安（10%・別途）", "", "", "", "", "", "", "", "", "", "", "", maintenanceEstimate()],
     );
     download(`${state.projectName || "案件"}-estimate.csv`, `\uFEFF${rows.map((row) => row.map(csvCell).join(",")).join("\r\n")}`, "text/csv;charset=utf-8");
   }
