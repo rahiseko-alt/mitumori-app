@@ -271,7 +271,7 @@
   }
 
   function featureSource(featureId) {
-    if (isMandatoryFeature(featureId)) return { label: "必須固定", className: "mandatory" };
+    if (isMandatoryFeature(featureId)) return { label: "必須項目", className: "mandatory" };
     if (state.manual.includes(featureId)) return { label: "商談で選択", className: "direct" };
     if (selection.automatic.has(featureId)) return { label: "自動追加", className: "auto" };
     return null;
@@ -427,7 +427,7 @@
           <input type="checkbox" data-tree-toggle="${node.id}" data-locked="${locked}" aria-label="${escapeHtml(displayName(feature))}を見積に含める" ${selected ? "checked" : ""} ${mandatory ? `disabled aria-disabled="true"` : locked ? `aria-disabled="true" tabindex="-1"` : ""}>
           <span class="check-lock">${locked ? "🔒" : ""}</span>
         </label>
-        <div><strong><span class="item-number">#${itemNumber(feature)}</span> ${escapeHtml(displayName(feature))}</strong>${technicalName(feature) ? `<span class="technical-name">技術名：${escapeHtml(technicalName(feature))}</span>` : ""}<small>${escapeHtml(Catalog.plainLayers[feature.layer] || feature.layer)}・難易度指数${escapeHtml(feature.difficultyIndex || "—")}・${temporaryPrice ? `${money.format(metrics.cost)}（未査定）` : `${escapeHtml(priceStatusLabel(feature))} 規模${escapeHtml(feature.priceSize)} ${money.format(metrics.cost)}（税別）`}${mandatory ? "・必須固定" : ""}${metrics.adjustmentReason ? `・${escapeHtml(metrics.adjustmentReason)}` : ""}</small></div>
+        <div><strong><span class="item-number">#${itemNumber(feature)}</span> ${escapeHtml(displayName(feature))}</strong>${technicalName(feature) ? `<span class="technical-name">技術名：${escapeHtml(technicalName(feature))}</span>` : ""}<small>${escapeHtml(Catalog.plainLayers[feature.layer] || feature.layer)}・難易度指数${escapeHtml(feature.difficultyIndex || "—")}・${temporaryPrice ? `${money.format(metrics.cost)}（未査定）` : `${escapeHtml(priceStatusLabel(feature))} 規模${escapeHtml(feature.priceSize)} ${money.format(metrics.cost)}（税別）`}${mandatory ? "・必須項目" : ""}${metrics.adjustmentReason ? `・${escapeHtml(metrics.adjustmentReason)}` : ""}</small></div>
         ${shared ? `<span class="shared-badge">${itemNumbers(dependents)}でも使用</span>` : locked && parents.length ? `<span class="shared-badge">${itemNumbers(parents)}が使用中</span>` : ""}
       </div>
       ${node.children?.length ? `<ul>${node.children.map((child) => renderDependencyNode(child, depth + 1)).join("")}</ul>` : ""}
@@ -666,7 +666,7 @@
       const feature = map.get(id);
       if (!feature) return;
       const metrics = directFeatureMetrics(feature);
-      rows.push([itemNumber(feature), featureSource(id)?.label || "一緒に必要", Catalog.plainLayers[feature.layer] || feature.layer, displayName(feature), technicalName(feature), feature.priceSourceName, feature.priceSize, priceStatusLabel(feature), feature.priceBasis || "", feature.priceIntent || "", metrics.adjustmentReason || "なし", feature.basePrice ?? "", metrics.standalonePrice, metrics.hours, metrics.cost]);
+      rows.push([itemNumber(feature), featureSource(id)?.label || "自動追加", Catalog.plainLayers[feature.layer] || feature.layer, displayName(feature), technicalName(feature), feature.priceSourceName, feature.priceSize, priceStatusLabel(feature), feature.priceBasis || "", feature.priceIntent || "", metrics.adjustmentReason || "なし", feature.basePrice ?? "", metrics.standalonePrice, metrics.hours, metrics.cost]);
     });
     rows.push(
       [],

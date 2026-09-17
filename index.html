@@ -24,7 +24,7 @@
         <output class="fixed-field">中小規模システム会社</output>
       </label>
       <label>
-        <span>お客様名（印刷用・任意）</span>
+        <span>顧客名（印刷用・任意）</span>
         <input id="customer-name" type="text" maxlength="80" placeholder="例：株式会社〇〇">
       </label>
       <label>
@@ -68,7 +68,7 @@
       </div>
 
       <section class="summary-grid" aria-label="見積概要" aria-live="polite">
-        <article><span>見積に含む項目</span><strong id="summary-count">0件</strong><small id="summary-count-detail">選択0・一緒に必要0</small></article>
+        <article><span>見積に含む項目</span><strong id="summary-count">0件</strong><small id="summary-count-detail">選択0・自動追加0</small></article>
         <article><span>参考作業時間</span><strong id="summary-hours">0時間</strong><small id="summary-months">金額の算出には使用していません</small></article>
         <article><span>概算金額（消費税別）</span><strong id="summary-cost">￥0</strong><small id="summary-price-note">価格表対応分と査定分の合計</small></article>
         <article><span>想定期間</span><strong id="summary-duration">0か月</strong><small id="summary-team">3〜4名で並行作業した場合</small></article>
@@ -114,7 +114,7 @@
 
       <section class="tree-guide">
         <div><span class="tree-symbol selectable">✓</span><strong>選択できる項目</strong><small>チェックを入れると見積に追加されます</small></div>
-        <div><span class="tree-symbol mandatory">🔒</span><strong>必須固定</strong><small>どの案件でも必ず発生する工程</small></div>
+        <div><span class="tree-symbol mandatory">🔒</span><strong>必須項目</strong><small>どの案件でも必ず発生する工程</small></div>
         <div><span class="tree-symbol locked">🔒</span><strong>自動追加</strong><small>選んだ項目に必要なため自動で含まれます</small></div>
         <div><span class="tree-symbol shared">●</span><strong>共通項目</strong><small>複数の機能で使う場合も1回のみ計上</small></div>
       </section>
@@ -136,9 +136,9 @@
 
         <aside class="dependency-inspector" aria-labelledby="dependency-heading">
           <div class="panel-heading">
-            <div><p class="step">自動で追加</p><h3 id="dependency-heading">一緒に必要になる準備</h3></div>
+            <div><p class="step">自動で追加</p><h3 id="dependency-heading">同時に必要になる項目</h3></div>
           </div>
-          <p id="dependency-help">上の項目名を押すと、実現するために一緒に必要になる準備を表示します。</p>
+          <p id="dependency-help">上の項目名を押すと、実現するために同時に必要となる項目を表示します。</p>
           <div id="dependency-tree" class="dependency-tree"></div>
           <div id="reverse-dependencies" class="reverse-dependencies"></div>
         </aside>

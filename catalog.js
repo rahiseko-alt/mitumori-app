@@ -317,7 +317,7 @@
     architecture: "全体構成とデータの扱い方を決める工程です。",
     "security-baseline": "入力・通信・アクセスに関する基本的な安全対策です。",
     "qa-baseline": "完成条件を確認する、標準の品質保証工程です。",
-    "project-management": "進捗・課題・変更と、お客様との確認を管理する工程です。",
+    "project-management": "進捗・課題・変更と、顧客との確認を管理する工程です。",
     "release-management": "公開の可否・変更内容・切戻し手順を管理する工程です。",
   };
 
@@ -392,7 +392,7 @@
     "unit-tests": "計算・入力内容の自動確認", "integration-tests": "画面から保存までの連携確認",
     "e2e-tests": "実際の操作手順の自動確認", "qa-baseline": "基本的な動作確認一式",
     "performance-tests": "多人数利用時の速度確認", "accessibility-tests": "見やすさ・操作性の確認",
-    "security-tests": "不正操作・設定漏れの確認", "uat-support": "お客様の確認作業の支援",
+    "security-tests": "不正操作・設定漏れの確認", "uat-support": "顧客の確認作業の支援",
     "project-management": "進捗・課題・変更の管理", "documentation-training": "操作マニュアルの作成と説明会",
     "release-management": "公開の判定と切戻し手順の管理", "support-operation": "公開後の問い合わせ・障害対応",
   };
