@@ -169,9 +169,15 @@
   .choice { position: relative; }
   .choice input { position: absolute; opacity: 0; width: 1px; height: 1px; }
   .choice span {
-    display: inline-block; padding: 7px 13px; border: 1px solid var(--rule); border-radius: 3px;
+    display: inline-flex; align-items: baseline; gap: 10px;
+    padding: 7px 13px; border: 1px solid var(--rule); border-radius: 3px;
     background: var(--card-2); cursor: pointer; font-size: 14px; line-height: 1.5;
   }
+  .choice span i {
+    font-style: normal; font-family: var(--mono); font-variant-numeric: tabular-nums;
+    font-size: 12.5px; color: var(--ink-3); white-space: nowrap;
+  }
+  .choice input:checked + span i { color: var(--indigo-ink); opacity: .85; }
   .choice span:hover { border-color: var(--ink-3); }
   .choice input:checked + span { background: var(--indigo); border-color: var(--indigo); color: var(--indigo-ink); }
   .choice input:focus-visible + span { outline: 2px solid var(--indigo); outline-offset: 2px; }
@@ -232,20 +238,6 @@
   .doc dd { margin: 2px 0 0; font-size: 13.5px; color: var(--ink-2); }
   .doc .foot { margin-top: 26px; padding-top: 14px; border-top: 1px solid var(--rule); font-size: 12px; color: var(--ink-3); display: grid; gap: 3px; }
 
-  /* ---- この答えで何が足されたか ---- */
-  .impact {
-    margin-top: 12px; padding: 10px 12px; border-radius: 3px;
-    background: var(--indigo-soft); border: 1px solid var(--rule-2); font-size: 13px;
-  }
-  .impact .h { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; font-weight: 500; }
-  .impact .h .d { font-family: var(--mono); font-variant-numeric: tabular-nums; color: var(--indigo); font-size: 15px; }
-  .impact ul { margin: 6px 0 0; padding-left: 0; list-style: none; display: grid; gap: 3px; }
-  .impact li { display: grid; grid-template-columns: 62px minmax(0, 1fr) auto; gap: 10px; align-items: baseline; color: var(--ink-2); }
-  .impact li .k { font-size: 10.5px; font-family: var(--mono); color: var(--ink-3); border: 1px solid var(--rule); border-radius: 2px; padding: 0 4px; text-align: center; }
-  .impact li.pulled .k { color: var(--flag); border-color: var(--flag); }
-  .impact li .p { font-family: var(--mono); font-variant-numeric: tabular-nums; }
-  .impact .why { color: var(--ink-3); font-size: 11.5px; }
-
   /* ---- 下端に貼りつく合計 ---- */
   .totalbar {
     position: fixed; left: 0; right: 0; bottom: 0; z-index: 40;
@@ -271,6 +263,13 @@
 
   .banner { padding: 11px 15px; border-radius: 4px; font-size: 13.5px; border: 1px solid var(--rule); background: var(--card-2); color: var(--ink-2); margin-bottom: 16px; }
   .banner.warn { border-color: var(--flag); background: var(--flag-soft); color: var(--flag); }
+
+  @media (max-width: 560px) {
+    .totalbar .shell { gap: 2px 10px; min-height: 0; }
+    .totalbar .grow { display: none; }
+    .totalbar .amt { font-size: 23px; }
+    .totalbar .facts { flex: 1 1 100%; text-align: left; font-size: 11px; line-height: 1.55; }
+  }
 
   @media (max-width: 900px) {
     .work { grid-template-columns: minmax(0, 1fr); }
@@ -321,7 +320,7 @@
 
   <section class="view" id="view-interview" hidden>
     <div class="viewhead"><h2>ヒアリング</h2><span class="chip" id="progress-chip">0 / 0</span></div>
-    <p class="lede">機能の名前は聞きません。業務の事実をそのまま答えてもらえば、必要な項目と金額はこちらで組み立てます。</p>
+    <p class="lede">機能の名前は聞きません。業務の事実をそのまま答えてもらえば、必要な項目と金額はこちらで組み立てます。選択肢の右の数字は、それを選んだときに増える金額（千円）です。土台としてついてくるものも含みます。内訳は「見積の内訳」にまとめてあります。</p>
     <div class="work">
       <div>
         <div class="banner" id="example-banner" hidden>これは操作を試すための例です。答えを変えても残りません。実際の商談では「案件」から新しく作ってください。</div>
@@ -426,19 +425,39 @@
     return { rows: rows, byLayer: byLayer, total: est.totalCost, selection: selection };
   }
 
-  // この質問の答えが、いくら増やし、何を連れてきたか。
-  // 答えを外した見積と引き算して出すので、「選んでいないのに入っている」項目の出どころが必ず名指しできる。
-  function impactOf(answers, qid) {
-    var without = {};
-    Object.keys(answers).forEach(function (key) { if (key !== qid) without[key] = answers[key]; });
-    var now = compute(answers);
-    var base = compute(without);
-    var added = now.rows.filter(function (r) { return !base.selection.selected.has(r.id); });
-    return {
-      delta: now.total - base.total,
-      chosen: added.filter(function (r) { return !r.auto; }),
-      pulled: added.filter(function (r) { return r.auto; })
-    };
+  // 選択肢ごとの金額は「その選択肢がある見積」と「ない見積」の引き算で出す。
+  // 依存で連れてくるものも差額に含まれるので、ボタンの数字と総額の動きが必ず一致する。
+  var totalCache = new Map();
+  function totalOf(answers) {
+    var key = JSON.stringify(answers);
+    if (!totalCache.has(key)) totalCache.set(key, compute(answers).total);
+    return totalCache.get(key);
+  }
+
+  function withChoice(answers, question, value, on) {
+    var next = {};
+    Object.keys(answers).forEach(function (id) {
+      next[id] = Array.isArray(answers[id]) ? answers[id].slice() : answers[id];
+    });
+    if (question.multi) {
+      var list = Array.isArray(next[question.id]) ? next[question.id] : [];
+      var at = list.indexOf(value);
+      if (on && at < 0) list.push(value);
+      if (!on && at >= 0) list.splice(at, 1);
+      next[question.id] = list;
+    } else if (on) {
+      next[question.id] = value;
+    } else {
+      delete next[question.id];
+    }
+    return next;
+  }
+
+  function choicePrice(answers, question, value, picked) {
+    var on = picked.indexOf(value) >= 0;
+    return on
+      ? totalOf(answers) - totalOf(withChoice(answers, question, value, false))
+      : totalOf(withChoice(answers, question, value, true)) - totalOf(answers);
   }
 
   // 「選んでいないのに入っている」項目の出どころ。長くなるので先頭2件で切る。
@@ -596,6 +615,7 @@
   // ── ヒアリング ──────────────────────────────────────────
   function renderQuestions() {
     var answers = state.data.answers;
+    totalCache.clear();
     var visible = Interview.visibleQuestions(answers);
     var locked = state.canWrite === false;
     var html = sections.map(function (sec, i) {
@@ -616,12 +636,13 @@
             '<p class="help">' + esc(q.help) + '</p><div class="choices">' +
             q.choices.map(function (ch) {
               var id = "q-" + q.id + "-" + ch.value;
+              var price = choicePrice(answers, q, ch.value, picked);
               return '<label class="choice"><input type="' + (q.multi ? "checkbox" : "radio") +
                 '" name="q-' + esc(q.id) + '" id="' + esc(id) + '" value="' + esc(ch.value) + '"' +
                 (picked.indexOf(ch.value) >= 0 ? " checked" : "") + (locked ? " disabled" : "") +
                 ' data-q="' + esc(q.id) + '" data-multi="' + (q.multi ? "1" : "") + '">' +
-                '<span>' + esc(ch.label) + '</span></label>';
-            }).join("") + '</div>' + impactHtml(answers, q, picked) + '</div>';
+                '<span>' + esc(ch.label) + '<i>' + (price > 0 ? "+" + k(price) : "0") + '</i></span></label>';
+            }).join("") + '</div></div>';
         }).join("") + '</div>';
     }).join("");
     var host = document.getElementById("questions");
@@ -641,28 +662,6 @@
         onAnswersChanged(input.id);
       });
     });
-  }
-
-  function impactHtml(answers, question, picked) {
-    if (!picked.length) return "";
-    var im = impactOf(answers, question.id);
-    if (!im.chosen.length && !im.pulled.length) {
-      return '<div class="impact"><div class="h"><span>この答えで金額は変わりません</span></div>' +
-        '<div class="why">必要なものは、ほかの答えですでに入っています。</div></div>';
-    }
-    var row = function (r, pulled) {
-      var why = pulled ? whyLine(r) : "";
-      return '<li' + (pulled ? ' class="pulled"' : "") + '><span class="k">' +
-        (pulled ? "ついてくる" : "選んだ") + '</span><span>' + esc(r.plain) +
-        (why ? '<br><span class="why">' + esc(why) + '</span>' : "") + '</span>' +
-        '<span class="p">' + (r.price ? k(r.price) : "—") + '</span></li>';
-    };
-    return '<div class="impact"><div class="h"><span>この答えで増えた金額</span>' +
-      '<span class="d">' + ksign(im.delta) + ' 千円</span></div><ul>' +
-      im.chosen.map(function (r) { return row(r, false); }).join("") +
-      im.pulled.map(function (r) { return row(r, true); }).join("") +
-      '</ul>' + (im.pulled.length ? '<div class="why">「ついてくる」は、選んだものが動くために欠かせない土台です。単独では買えません。</div>' : "") +
-      '</div>';
   }
 
   function onAnswersChanged(focusId) {
