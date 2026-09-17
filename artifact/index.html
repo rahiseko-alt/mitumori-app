@@ -232,6 +232,43 @@
   .doc dd { margin: 2px 0 0; font-size: 13.5px; color: var(--ink-2); }
   .doc .foot { margin-top: 26px; padding-top: 14px; border-top: 1px solid var(--rule); font-size: 12px; color: var(--ink-3); display: grid; gap: 3px; }
 
+  /* ---- この答えで何が足されたか ---- */
+  .impact {
+    margin-top: 12px; padding: 10px 12px; border-radius: 3px;
+    background: var(--indigo-soft); border: 1px solid var(--rule-2); font-size: 13px;
+  }
+  .impact .h { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; font-weight: 500; }
+  .impact .h .d { font-family: var(--mono); font-variant-numeric: tabular-nums; color: var(--indigo); font-size: 15px; }
+  .impact ul { margin: 6px 0 0; padding-left: 0; list-style: none; display: grid; gap: 3px; }
+  .impact li { display: grid; grid-template-columns: 62px minmax(0, 1fr) auto; gap: 10px; align-items: baseline; color: var(--ink-2); }
+  .impact li .k { font-size: 10.5px; font-family: var(--mono); color: var(--ink-3); border: 1px solid var(--rule); border-radius: 2px; padding: 0 4px; text-align: center; }
+  .impact li.pulled .k { color: var(--flag); border-color: var(--flag); }
+  .impact li .p { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+  .impact .why { color: var(--ink-3); font-size: 11.5px; }
+
+  /* ---- 下端に貼りつく合計 ---- */
+  .totalbar {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 40;
+    background: var(--card); border-top: 1px solid var(--ink);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    box-shadow: 0 -6px 24px -18px rgba(23, 33, 43, .6);
+  }
+  .totalbar .shell { display: flex; align-items: center; gap: 8px 16px; min-height: 56px; padding-block: 8px; flex-wrap: wrap; }
+  .totalbar .lab { font-size: 12px; color: var(--ink-3); letter-spacing: .06em; }
+  .totalbar .amt { font-family: var(--mono); font-variant-numeric: tabular-nums; font-size: 26px; font-weight: 600; line-height: 1.2; }
+  .totalbar .unit { font-size: 12px; color: var(--ink-3); margin-left: 3px; }
+  .totalbar .delta {
+    font-family: var(--mono); font-size: 13px; padding: 2px 8px; border-radius: 999px;
+    background: var(--indigo-soft); color: var(--indigo); border: 1px solid var(--indigo);
+    opacity: 0; transition: opacity .25s ease;
+  }
+  .totalbar .delta.on { opacity: 1; }
+  .totalbar .delta.minus { background: var(--flag-soft); color: var(--flag); border-color: var(--flag); }
+  .totalbar .grow { flex: 1 1 auto; }
+  .totalbar .facts { font-size: 12px; color: var(--ink-2); text-align: right; }
+  .totalbar .facts .flagged { color: var(--flag); }
+  main { padding-bottom: 96px; }
+
   .banner { padding: 11px 15px; border-radius: 4px; font-size: 13.5px; border: 1px solid var(--rule); background: var(--card-2); color: var(--ink-2); margin-bottom: 16px; }
   .banner.warn { border-color: var(--flag); background: var(--flag-soft); color: var(--flag); }
 
@@ -297,7 +334,7 @@
 
   <section class="view" id="view-estimate" hidden>
     <div class="viewhead"><h2>見積の内訳</h2><span class="chip" id="estimate-chip"></span></div>
-    <p class="lede">ヒアリングの答えから組み立てた全項目です。<b>自動追加</b>は選んだ項目が動くために要るもの、<b>必須</b>はどの案件でも外せないものです。</p>
+    <p class="lede">出どころで3つに分けています。<b>答えて選んだもの</b>／<b>ついてきたもの</b>（選んだものが動くために欠かせない土台）／<b>どの案件でも要るもの</b>。金額の単位は千円です。</p>
     <div id="detail"></div>
   </section>
 
@@ -308,6 +345,16 @@
     <div class="panel doc" id="doc"></div>
   </section>
 </main>
+
+<div class="totalbar" id="totalbar" hidden>
+  <div class="shell">
+    <span class="lab">概算金額</span>
+    <span class="amt" id="bar-amt">0</span><span class="unit">千円（消費税別）</span>
+    <span class="delta" id="bar-delta"></span>
+    <span class="grow"></span>
+    <span class="facts" id="bar-facts"></span>
+  </div>
+</div>
 
 <script src="catalog.js"></script>
 <script src="engine.js"></script>
@@ -325,7 +372,9 @@
   Interview.questions.forEach(function (q) { if (sections.indexOf(q.section) < 0) sections.push(q.section); });
 
   var nf = new Intl.NumberFormat("ja-JP");
-  function yen(n) { return "¥" + nf.format(Math.round(Number(n) || 0)); }
+  // 画面の金額はすべて千円単位。単価は5,000円刻みなので割り切れ、端数は出ない。
+  function k(n) { return nf.format(Math.round((Number(n) || 0) / 1000)); }
+  function ksign(n) { var v = Math.round((Number(n) || 0) / 1000); return (v > 0 ? "+" : "") + nf.format(v); }
   function esc(s) {
     return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
       return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
@@ -375,6 +424,30 @@
     }).filter(function (g) { return g.items.length > 0; });
 
     return { rows: rows, byLayer: byLayer, total: est.totalCost, selection: selection };
+  }
+
+  // この質問の答えが、いくら増やし、何を連れてきたか。
+  // 答えを外した見積と引き算して出すので、「選んでいないのに入っている」項目の出どころが必ず名指しできる。
+  function impactOf(answers, qid) {
+    var without = {};
+    Object.keys(answers).forEach(function (key) { if (key !== qid) without[key] = answers[key]; });
+    var now = compute(answers);
+    var base = compute(without);
+    var added = now.rows.filter(function (r) { return !base.selection.selected.has(r.id); });
+    return {
+      delta: now.total - base.total,
+      chosen: added.filter(function (r) { return !r.auto; }),
+      pulled: added.filter(function (r) { return r.auto; })
+    };
+  }
+
+  // 「選んでいないのに入っている」項目の出どころ。長くなるので先頭2件で切る。
+  function whyLine(row) {
+    if (row.reason) return row.reason;
+    if (!row.requiredBy.length) return "";
+    var names = row.requiredBy.map(function (id) { return Catalog.plainNames[id] || id; });
+    var head = names.slice(0, 2).join("・");
+    return head + (names.length > 2 ? "ほか" + (names.length - 2) + "件" : "") + " が動くために必要";
   }
 
   // ── 状態 ────────────────────────────────────────────────
@@ -487,7 +560,7 @@
         '<span><span class="t">' + esc(c.title || "無題の案件") + '</span>' +
         (c.example ? '<span class="tag">例</span>' : "") +
         '<br><span class="m">' + esc(c.customer || "顧客名なし") + '　/　' + answered + '問に回答　/　' + esc(when) + '</span></span>' +
-        '<span class="amt money">' + yen(c.total || 0) + '</span></button>';
+        '<span class="amt money">' + k(c.total || 0) + '<span style="font-size:11px;color:var(--ink-3)"> 千円</span></span></button>';
     }).join("");
     Array.prototype.forEach.call(host.querySelectorAll(".caserow"), function (b) {
       b.addEventListener("click", function () { openCase(b.dataset.id); });
@@ -548,7 +621,7 @@
                 (picked.indexOf(ch.value) >= 0 ? " checked" : "") + (locked ? " disabled" : "") +
                 ' data-q="' + esc(q.id) + '" data-multi="' + (q.multi ? "1" : "") + '">' +
                 '<span>' + esc(ch.label) + '</span></label>';
-            }).join("") + '</div></div>';
+            }).join("") + '</div>' + impactHtml(answers, q, picked) + '</div>';
         }).join("") + '</div>';
     }).join("");
     var host = document.getElementById("questions");
@@ -570,11 +643,34 @@
     });
   }
 
+  function impactHtml(answers, question, picked) {
+    if (!picked.length) return "";
+    var im = impactOf(answers, question.id);
+    if (!im.chosen.length && !im.pulled.length) {
+      return '<div class="impact"><div class="h"><span>この答えで金額は変わりません</span></div>' +
+        '<div class="why">必要なものは、ほかの答えですでに入っています。</div></div>';
+    }
+    var row = function (r, pulled) {
+      var why = pulled ? whyLine(r) : "";
+      return '<li' + (pulled ? ' class="pulled"' : "") + '><span class="k">' +
+        (pulled ? "ついてくる" : "選んだ") + '</span><span>' + esc(r.plain) +
+        (why ? '<br><span class="why">' + esc(why) + '</span>' : "") + '</span>' +
+        '<span class="p">' + (r.price ? k(r.price) : "—") + '</span></li>';
+    };
+    return '<div class="impact"><div class="h"><span>この答えで増えた金額</span>' +
+      '<span class="d">' + ksign(im.delta) + ' 千円</span></div><ul>' +
+      im.chosen.map(function (r) { return row(r, false); }).join("") +
+      im.pulled.map(function (r) { return row(r, true); }).join("") +
+      '</ul>' + (im.pulled.length ? '<div class="why">「ついてくる」は、選んだものが動くために欠かせない土台です。単独では買えません。</div>' : "") +
+      '</div>';
+  }
+
   function onAnswersChanged(focusId) {
     var y = window.scrollY;
     renderQuestions();
     renderDigs();
     renderLedger();
+    renderTotalBar();
     scheduleSave();
     window.scrollTo(0, y);
     if (focusId) {
@@ -685,24 +781,27 @@
     r.openCount = openCount;
     r.answered = Interview.answeredCount(state.data.answers);
     r.asked = Interview.visibleQuestions(state.data.answers).length;
+    // 出どころ別の件数。画面のどこでも同じ数を出す。
+    var base = r.rows.filter(function (x) { return x.must || Interview.alwaysAdded.indexOf(x.id) >= 0; }).length;
+    var pulled = r.rows.filter(function (x) { return x.auto && !x.must && Interview.alwaysAdded.indexOf(x.id) < 0; }).length;
+    r.count = { base: base, pulled: pulled, chosen: r.rows.length - base - pulled };
     return r;
   }
 
   function renderLedger() {
     var s = summarize();
     var max = s.byLayer.reduce(function (m, g) { return Math.max(m, g.sum); }, 1);
-    var auto = s.rows.filter(function (x) { return x.auto; }).length;
     document.getElementById("progress-chip").textContent = s.answered + " / " + s.asked + " 問";
     document.getElementById("ledger").innerHTML =
-      '<div class="cap">概算金額（消費税別）</div>' +
-      '<b class="total money">' + yen(s.total) + '</b>' +
-      '<div class="sub">' + s.rows.length + '項目　/　5,000円単位</div>' +
+      '<div class="cap">概算金額（千円・消費税別）</div>' +
+      '<b class="total money">' + k(s.total) + '</b>' +
+      '<div class="sub">' + s.rows.length + '項目　/　単位：千円</div>' +
       '<div class="bars">' + s.byLayer.map(function (g) {
-        return '<div class="bar"><span class="nm">' + esc(g.name) + '</span><span class="v">' + yen(g.sum) +
+        return '<div class="bar"><span class="nm">' + esc(g.name) + '</span><span class="v">' + k(g.sum) +
           '</span><span class="track"><span class="fill" style="width:' + Math.round(g.sum / max * 100) + '%"></span></span></div>';
       }).join("") + '</div>' +
       '<div class="stats">' +
-      '<div>選んだ項目 ' + (s.rows.length - auto) + '件　/　自動で足りた項目 ' + auto + '件</div>' +
+      '<div>答えて選んだもの ' + s.count.chosen + '件　/　ついてきたもの ' + s.count.pulled + '件　/　どの案件でも要るもの ' + s.count.base + '件</div>' +
       (s.openCount ? '<div class="flagged">言葉を揃えていない論点 ' + s.openCount + '件</div>'
         : (s.digs.length ? '<div>言葉を揃える論点 ' + s.digs.length + '件すべて記録済み</div>' : '<div>言葉を揃える論点はまだありません</div>')) +
       '</div>' +
@@ -713,32 +812,84 @@
     document.getElementById("l-summary").addEventListener("click", function () { show("summary"); });
   }
 
+  // 何を押しても金額が見えているように、下端の帯は全画面で出しっぱなしにする。
+  var lastTotal = null, deltaTimer = null;
+  function renderTotalBar() {
+    var bar = document.getElementById("totalbar");
+    if (!state.data || state.view === "cases") { bar.hidden = true; lastTotal = null; return; }
+    bar.hidden = false;
+    var s = summarize();
+    document.getElementById("bar-amt").textContent = k(s.total);
+    document.getElementById("bar-facts").innerHTML =
+      '答えて選んだもの ' + s.count.chosen + '件　ついてきたもの ' + s.count.pulled + '件　どの案件でも要るもの ' + s.count.base + '件' +
+      (s.openCount ? '<br><span class="flagged">言葉を揃えていない論点 ' + s.openCount + '件</span>' : "");
+
+    var chip = document.getElementById("bar-delta");
+    if (lastTotal !== null && s.total !== lastTotal) {
+      chip.textContent = ksign(s.total - lastTotal) + " 千円";
+      chip.classList.toggle("minus", s.total < lastTotal);
+      chip.classList.add("on");
+      clearTimeout(deltaTimer);
+      deltaTimer = setTimeout(function () { chip.classList.remove("on"); }, 2600);
+    }
+    lastTotal = s.total;
+  }
+
   // ── 内訳 ────────────────────────────────────────────────
   function renderDetail() {
     var s = summarize();
     var owner = state.isOwner;
-    document.getElementById("estimate-chip").textContent = s.rows.length + "項目　" + yen(s.total);
-    var head = '<tr><th>項目</th><th class="num">金額</th>' + (owner ? '<th class="num">基準値</th>' : "") + '<th>備考</th></tr>';
-    var body = s.byLayer.map(function (g) {
-      return '<tr class="grouphead"><td>' + esc(g.name) + '</td><td class="num money">' + yen(g.sum) + '</td>' +
+    document.getElementById("estimate-chip").textContent = s.rows.length + "項目　" + k(s.total) + "千円";
+
+    // 出どころで3つに分ける。「選んでいないのに入っている」を、金額つきで先に見せる。
+    var origin = [
+      { key: "chosen", name: "答えて選んだもの", note: "ヒアリングの答えが直接えらんだ項目です。" },
+      { key: "pulled", name: "ついてきたもの", note: "選んだものが動くために欠かせない土台です。単独では買えません。" },
+      { key: "must", name: "どの案件でも要るもの", note: "要件定義、設計、品質保証など、外すと引き渡せない項目です。" }
+    ].map(function (bucket) {
+      var items = s.rows.filter(function (r) {
+        var always = r.must || Interview.alwaysAdded.indexOf(r.id) >= 0;
+        if (bucket.key === "must") return always;
+        if (bucket.key === "pulled") return !always && r.auto;
+        return !always && !r.auto;
+      });
+      bucket.items = items;
+      bucket.sum = items.reduce(function (t, r) { return t + r.price; }, 0);
+      return bucket;
+    });
+
+    var head = '<tr><th>項目</th><th class="num">金額（千円）</th>' + (owner ? '<th class="num">基準値（千円）</th>' : "") + '<th>なぜ入っているか</th></tr>';
+    var body = origin.map(function (bucket) {
+      if (!bucket.items.length) return "";
+      return '<tr class="grouphead"><td>' + esc(bucket.name) + '（' + bucket.items.length + '件）<br>' +
+        '<span class="tname">' + esc(bucket.note) + '</span></td><td class="num money">' + k(bucket.sum) + '</td>' +
         (owner ? '<td></td>' : "") + '<td></td></tr>' +
-        g.items.map(function (r) {
-          var note = r.reason ? esc(r.reason) : (r.auto && r.requiredBy.length
-            ? esc((Catalog.plainNames[r.requiredBy[0]] || r.requiredBy[0]) + " が動くために必要")
-            : (r.must ? esc(Catalog.mandatoryReasons[r.id] || "") : ""));
+        bucket.items.map(function (r) {
+          // 自分で選んだものに「なぜ」は要らない。答えたから入っている。
+          var note = bucket.key === "chosen" ? ""
+            : (r.must ? esc(Catalog.mandatoryReasons[r.id] || "") : esc(whyLine(r)));
           return '<tr><td>' + esc(r.plain) +
-            (r.must ? '<span class="tag must">必須</span>' : (r.auto ? '<span class="tag auto">自動追加</span>' : "")) +
+            '<span class="tag">' + esc(Catalog.plainLayers[r.layer] || r.layer) + '</span>' +
             '<br><span class="tname">' + esc(r.name) + '</span></td>' +
-            '<td class="num money">' + yen(r.price) + '</td>' +
-            (owner ? '<td class="num money">' + yen(r.base) + '</td>' : "") +
+            '<td class="num money">' + (r.price ? k(r.price) : "—") + '</td>' +
+            (owner ? '<td class="num money">' + k(r.base) + '</td>' : "") +
             '<td>' + note + '</td></tr>';
         }).join("");
     }).join("");
-    var foot = '<tr class="totalrow"><td>合計（消費税別）</td><td class="num money">' + yen(s.total) + '</td>' +
+    var foot = '<tr class="totalrow"><td>合計（消費税別）</td><td class="num money">' + k(s.total) + '</td>' +
       (owner ? '<td></td>' : "") + '<td></td></tr>';
+
+    var maxSum = origin.reduce(function (m, b) { return Math.max(m, b.sum); }, 1);
     document.getElementById("detail").innerHTML =
-      (state.downloads ? '<div class="btnrow" style="margin-bottom:14px"><button class="btn" id="btn-csv" type="button">明細をCSVで保存する</button></div>' : "") +
-      '<div class="tablewrap"><table><thead>' + head + '</thead><tbody>' + body + foot + '</tbody></table></div>';
+      '<div class="panel" style="padding:16px 17px;margin-top:16px"><div class="bars" style="margin:0;padding-top:0;border-top:0">' +
+      origin.map(function (b) {
+        return '<div class="bar"><span class="nm">' + esc(b.name) + '　' + b.items.length + '件</span>' +
+          '<span class="v">' + k(b.sum) + '</span><span class="track"><span class="fill" style="width:' +
+          Math.round(b.sum / maxSum * 100) + '%"></span></span></div>';
+      }).join("") + '</div></div>' +
+      (state.downloads ? '<div class="btnrow" style="margin-top:14px"><button class="btn" id="btn-csv" type="button">明細をCSVで保存する</button></div>' : "") +
+      '<div class="tablewrap"><table><thead>' + head + '</thead><tbody>' + body + foot + '</tbody></table></div>' +
+      '<p class="lede" style="margin-top:10px">金額の単位は千円です。「—」は上位の項目の一式価格に含まれており、別途はかかりません。</p>';
     var csv = document.getElementById("btn-csv");
     if (csv) csv.addEventListener("click", saveCsv);
   }
@@ -761,16 +912,16 @@
     document.getElementById("doc").innerHTML =
       '<div class="dochead"><h2>お見積のご提案</h2>' +
       '<div class="meta"><span>' + esc(d.customer || "御中") + '　御中</span><span>' + esc(d.title || "") + '</span><span>' + today() + '</span></div></div>' +
-      '<div class="tablewrap" style="margin-top:0"><table><thead><tr><th>ご提供する内容</th><th class="num">金額</th></tr></thead><tbody>' +
+      '<div class="tablewrap" style="margin-top:0"><table><thead><tr><th>ご提供する内容</th><th class="num">金額（千円）</th></tr></thead><tbody>' +
       s.byLayer.map(function (g) {
         return '<tr><td>' + esc(g.name) + '<br><span class="tname">' + g.items.length + '項目</span></td>' +
-          '<td class="num money">' + yen(g.sum) + '</td></tr>';
+          '<td class="num money">' + k(g.sum) + '</td></tr>';
       }).join("") + '</tbody></table></div>' +
-      '<div class="grand"><span>合計（消費税別）</span><span class="v money">' + yen(s.total) + '</span></div>' +
+      '<div class="grand"><span>合計（千円・消費税別）</span><span class="v money">' + k(s.total) + '</span></div>' +
       (rows.length ? '<h3>商談で言葉を揃えた内容</h3><dl>' + rows.map(function (r) {
         return '<dt>' + esc(r.term) + '</dt><dd>' + (r.open ? '<span style="color:var(--flag)">この場では決めきれていません。次回までに確認します。</span>' : esc(r.text)) + '</dd>';
       }).join("") + '</dl>' : "") +
-      '<div class="foot"><span>金額は消費税を含みません。</span>' +
+      '<div class="foot"><span>金額の単位は千円です。消費税は含みません。</span>' +
       '<span>聞き取った内容にもとづく概算です。仕様が決まる過程で増減します。</span>' +
       '<span>項目ごとの明細は、ご要望があればお出しします。</span></div>';
   }
@@ -780,21 +931,23 @@
     if (!state.downloads) return;
     var s = summarize();
     var owner = state.isOwner;
-    var head = ["分類", "項目名", "技術名", "金額", "自動追加", "必須", "備考"];
-    if (owner) head.splice(4, 0, "基準値");
+    var head = ["分類", "項目名", "技術名", "出どころ", "金額（円）", "なぜ入っているか"];
+    if (owner) head.splice(5, 0, "基準値（円）");
     var lines = [head];
     s.byLayer.forEach(function (g) {
       g.items.forEach(function (r) {
-        var note = r.reason || (r.auto && r.requiredBy.length ? (Catalog.plainNames[r.requiredBy[0]] || r.requiredBy[0]) + " が動くために必要" : (r.must ? (Catalog.mandatoryReasons[r.id] || "") : ""));
-        var row = [g.name, r.plain, r.name, r.price, r.auto ? "はい" : "", r.must ? "はい" : "", note];
-        if (owner) row.splice(4, 0, r.base);
+        var always = r.must || Interview.alwaysAdded.indexOf(r.id) >= 0;
+        var from = always ? "どの案件でも要る" : (r.auto ? "ついてきた" : "答えて選んだ");
+        var note = r.must ? (Catalog.mandatoryReasons[r.id] || "") : (always ? "" : whyLine(r));
+        var row = [g.name, r.plain, r.name, from, r.price, note];
+        if (owner) row.splice(5, 0, r.base);
         lines.push(row);
       });
     });
     lines.push([]);
-    lines.push(["合計（消費税別）", "", "", s.total]);
+    lines.push(["合計（消費税別）", "", "", "", s.total]);
     glossaryRows().forEach(function (r) {
-      lines.push(["言葉を揃えた内容", r.term, r.text || "未確認", ""]);
+      lines.push(["言葉を揃えた内容", r.term, r.text || "未確認", "", ""]);
     });
     var csv = "﻿" + lines.map(function (row) {
       return row.map(function (cell) {
@@ -825,15 +978,15 @@
       "</title><style>" + style + "</style></head><body>" +
       '<div class="head"><h1>お見積のご提案</h1><div class="meta"><span>' + esc(d.customer || "") +
       '　御中</span><span>' + esc(d.title || "") + '</span><span>' + today() + '</span></div></div>' +
-      '<table><thead><tr><th>ご提供する内容</th><th class="n">金額</th></tr></thead><tbody>' +
+      '<table><thead><tr><th>ご提供する内容</th><th class="n">金額（千円）</th></tr></thead><tbody>' +
       s.byLayer.map(function (g) {
-        return "<tr><td>" + esc(g.name) + "（" + g.items.length + "項目）</td><td class=\"n\">" + yen(g.sum) + "</td></tr>";
+        return "<tr><td>" + esc(g.name) + "（" + g.items.length + "項目）</td><td class=\"n\">" + k(g.sum) + "</td></tr>";
       }).join("") + "</tbody></table>" +
-      '<div class="grand"><span>合計（消費税別）</span><b>' + yen(s.total) + "</b></div>" +
+      '<div class="grand"><span>合計（千円・消費税別）</span><b>' + k(s.total) + "</b></div>" +
       (rows.length ? "<h2>商談で言葉を揃えた内容</h2><dl>" + rows.map(function (r) {
         return "<dt>" + esc(r.term) + "</dt><dd>" + esc(r.text || "この場では決めきれていません。次回までに確認します。") + "</dd>";
       }).join("") + "</dl>" : "") +
-      '<div class="foot">金額は消費税を含みません。<br>聞き取った内容にもとづく概算です。仕様が決まる過程で増減します。<br>項目ごとの明細は、ご要望があればお出しします。</div>' +
+      '<div class="foot">金額の単位は千円です。消費税は含みません。<br>聞き取った内容にもとづく概算です。仕様が決まる過程で増減します。<br>項目ごとの明細は、ご要望があればお出しします。</div>' +
       "</body></html>";
     offer((d.title || "見積") + "_ご提案.html", html);
   }
@@ -855,11 +1008,12 @@
     if (state.data) document.getElementById("case-chip").textContent = state.data.title || "無題の案件";
     document.getElementById("btn-doc").disabled = !state.downloads;
     if (state.view === "cases") renderCases();
-    if (!state.data) return;
+    if (!state.data) { renderTotalBar(); return; }
     document.getElementById("example-banner").hidden = !state.data.example;
     if (state.view === "interview") { renderQuestions(); renderDigs(); renderLedger(); }
     if (state.view === "estimate") renderDetail();
     if (state.view === "summary") renderDoc();
+    renderTotalBar();
   }
 
   // ── 起動 ────────────────────────────────────────────────
