@@ -641,7 +641,7 @@
                 '" name="q-' + esc(q.id) + '" id="' + esc(id) + '" value="' + esc(ch.value) + '"' +
                 (picked.indexOf(ch.value) >= 0 ? " checked" : "") + (locked ? " disabled" : "") +
                 ' data-q="' + esc(q.id) + '" data-multi="' + (q.multi ? "1" : "") + '">' +
-                '<span>' + esc(ch.label) + '<i>' + (price > 0 ? "+" + k(price) : "0") + '</i></span></label>';
+                '<span>' + esc(ch.label) + '<i>' + k(price) + '</i></span></label>';
             }).join("") + '</div></div>';
         }).join("") + '</div>';
     }).join("");

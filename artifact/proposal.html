@@ -150,7 +150,11 @@
 
   <section>
     <h2>これが決まると、上限が下がります</h2>
-    <p class="lede">金額が大きく動く順に並べています。その場で決められるものから押してください。数字は、決めたときに上限が下がる額（千円）です。</p>
+    <p class="lede">
+      金額が大きく動く順に並べています。その場で決められるものから押してください。
+      見出しの横の<b>「上限 −○○」</b>は、この論点が決まったときに上限が下がる額。
+      <b>ボタンの数字</b>は、その選び方を採った場合の金額です。どちらも千円です。
+    </p>
     <div id="points" style="margin-top:12px"></div>
   </section>
 
@@ -267,7 +271,7 @@
           var on = pickedList.indexOf(c.value) >= 0;
           return '<button class="opt" type="button" aria-pressed="' + on + '" data-q="' + esc(q.id) +
             '" data-v="' + esc(c.value) + '">' + esc(c.label) +
-            '<i>' + (on ? "" : "+") + k(optionPrice(q, c.value)) + '</i></button>';
+            '<i>' + k(optionPrice(q, c.value)) + '</i></button>';
         }).join("") + '</div>' +
         (function () {
           var dug = q.choices.filter(function (c) { return c.dig && pickedList.indexOf(c.value) >= 0; });
