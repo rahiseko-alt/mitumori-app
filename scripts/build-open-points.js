@@ -1,4 +1,4 @@
-// 論点表（.claude/skills/mitsumori-flow/open-points.md）を interview.js と catalog.js から作り直す。
+// 論点表（.claude/skills/mitsumori-flow/見積論点表.md）を interview.js と catalog.js から作り直す。
 // 見積の幅は決め打ちの%ではなく、決まっていない論点の「いちばん安い選び方」と
 // 「いちばん高い選び方」の差から出る。その差を論点ごとに測って表にする。
 //   node scripts/build-open-points.js
@@ -9,7 +9,7 @@ const Engine = require("../engine.js");
 const Interview = require("../interview.js");
 const Range = require("../range.js");
 
-const TARGET = path.join(__dirname, "..", ".claude", "skills", "mitsumori-flow", "open-points.md");
+const TARGET = path.join(__dirname, "..", ".claude", "skills", "mitsumori-flow", "見積論点表.md");
 const k = (n) => Math.round(Number(n || 0) / 1000);
 
 function total(answers) {
@@ -67,8 +67,12 @@ function buildOpenPoints() {
   }).sort((a, b) => b.band - a.band);
   const base = whole.floor;
 
+  const meta = Catalog.priceMasterMeta || {};
   const out = [
-    "# 論点表（幅の出どころ・千円）",
+    "# 見積論点表（幅の出どころ・千円）",
+    "",
+    "**版：価格基準日 " + (meta.createdAt || "不明") + "／縮小率 " + (meta.priceScale || "不明") +
+      "／" + Interview.questions.length + "論点**",
     "",
     "見積の幅は決め打ちではない。**まだ決まっていない論点の、いちばん安い選び方と",
     "いちばん高い選び方の差**が幅になる。論点が1つ決まるたびに、その差の分だけ幅が縮む。",
@@ -83,7 +87,7 @@ function buildOpenPoints() {
     "**下の「幅」を足し算してはならない。** 足すと " + k(points.reduce((s, p) => s + p.band, 0)) +
       "千円になるが、実際の上限は " + k(whole.ceiling - base) + "千円ぶんしか増えない。",
     "複数の論点が同じ土台を共有しているためで、足し算は二重に数えてしまう。",
-    "合計は必ず `price-table.md` で組み直すこと。",
+    "合計は必ず `見積単価表` で組み直すこと。",
     "",
     "**グリルは、この表の上から順に潰す。** 幅の大きい論点を1つ決めるほうが、小さい論点を",
     "5つ決めるより幅が縮む。顧客が付き合ってくれる時間は有限なので、金額が動く順に聞く。",

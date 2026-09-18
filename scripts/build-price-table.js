@@ -1,4 +1,4 @@
-// 価格表（.claude/skills/mitsumori-flow/price-table.md）を catalog.js から作り直す。
+// 価格表（.claude/skills/mitsumori-flow/見積単価表.md）を catalog.js から作り直す。
 // チャットで動く Claude は catalog.js を読めないので、同じ数字を読める形に写す。
 // 単価を変えたら必ず実行する:  node scripts/build-price-table.js
 const fs = require("fs");
@@ -6,7 +6,7 @@ const path = require("path");
 const Catalog = require("../catalog.js");
 const Interview = require("../interview.js");
 
-const TARGET = path.join(__dirname, "..", ".claude", "skills", "mitsumori-flow", "price-table.md");
+const TARGET = path.join(__dirname, "..", ".claude", "skills", "mitsumori-flow", "見積単価表.md");
 
 function buildPriceTable() {
 const mandatory = new Set(Catalog.mandatoryFeatureIds);
@@ -14,8 +14,12 @@ const always = new Set(Interview.alwaysAdded);
 const k = (n) => Math.round(Number(n || 0) / 1000);
 const name = (id) => Catalog.plainNames[id] || id;
 
+const meta = Catalog.priceMasterMeta || {};
 const out = [
   "# 見積単価表（千円・消費税別）",
+  "",
+  "**版：価格基準日 " + (meta.createdAt || "不明") + "／縮小率 " + (meta.priceScale || "不明") +
+    "／" + Catalog.features.length + "項目**",
   "",
   "この表が唯一の単価の出どころである。ここにない金額を作ってはならない。",
   "原本は `catalog.js`。この表は `node scripts/build-price-table.js` で生成しており、手で書き換えない。",
