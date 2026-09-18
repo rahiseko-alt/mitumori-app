@@ -37,6 +37,19 @@ for (const [name, text] of [["SKILL.md", SKILL], ["貼る指示", PASTE]]) {
     assert.ok(text.includes("選択肢の説明に金額を入れる"), "金額をどこに置くかが書かれていない");
   });
 
+  test(name + "：頼まれたものを作らず、見積に変えると決まっている", () => {
+    assert.ok(text.includes("頼まれたものを作る"), "制作依頼への歯止めがない");
+    assert.ok(text.includes("作らずに見積る"), "作るのではなく見積る、と書かれていない");
+    assert.ok(text.includes("動くものを出すのは段階8のデモだけ"), "デモ以外を作らない決まりがない");
+  });
+
+  test(name + "：入力の形式を問わないと決まっている", () => {
+    assert.ok(text.includes("渡されるものの形は問わない"), "入力の形を問わない決まりがない");
+    assert.ok(text.includes("形式を指定して突き返さない") || text.includes("入力の形式を指定して突き返す"),
+      "形式を求めて突き返すことへの歯止めがない");
+    assert.ok(text.includes("待たずに段階3へ進む"), "合図を待たずに始める決まりがない");
+  });
+
   test(name + "：文書を出すのはヒアリングのあとだと決まっている", () => {
     const stage3 = text.slice(text.indexOf("### 3"), text.indexOf("### 4"));
     assert.ok(stage3.includes("アーティファクトはこの段階では出さない"),
