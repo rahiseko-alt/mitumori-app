@@ -17,14 +17,14 @@
   };
 
   const roles = {
-    planning: "打合せ・業務整理",
-    design: "画面の使いやすさ",
-    frontend: "画面を作る",
-    backend: "計算・処理を作る",
-    data: "情報の保存・整理",
-    infra: "公開・安定運用",
-    qa: "動作確認",
-    pm: "進行管理",
+    planning: "要件整理・打合せ",
+    design: "画面デザイン",
+    frontend: "画面開発",
+    backend: "業務処理開発",
+    data: "データ設計・構築",
+    infra: "公開環境の構築",
+    qa: "テスト・品質確認",
+    pm: "プロジェクト管理",
   };
 
   const h = (planning, design, frontend, backend, data, infra, qa, pm) => ({
@@ -313,12 +313,12 @@
     "release-management",
   ];
   const mandatoryReasons = {
-    requirements: "目的・範囲・受入条件を決める工程です。",
-    architecture: "全体構成とデータの考え方を決める工程です。",
-    "security-baseline": "入力・通信・アクセスの基本的な安全対策です。",
-    "qa-baseline": "完成条件を確認する標準の品質保証工程です。",
-    "project-management": "進捗・課題・変更・商談相手の確認を管理する工程です。",
-    "release-management": "公開判定・変更内容・切戻しを管理する工程です。",
+    requirements: "目的・対象範囲・受入条件を決める工程です。",
+    architecture: "全体構成とデータの扱い方を決める工程です。",
+    "security-baseline": "入力・通信・アクセスに関する基本的な安全対策です。",
+    "qa-baseline": "完成条件を確認する、標準の品質保証工程です。",
+    "project-management": "進捗・課題・変更と、顧客との確認を管理する工程です。",
+    "release-management": "公開の可否・変更内容・切戻し手順を管理する工程です。",
   };
 
   // QAとリリース管理は横断工程であり、選択済みの機能を確認・公開する。
@@ -340,61 +340,61 @@
   });
 
   const plainLayers = {
-    planning: "何を作るか決める", frontend: "利用者が見る・入力する", backend: "仕事の流れや計算を動かす",
-    data: "情報を保存・探す", security: "安全にログイン・使い分ける", mobile: "現場やスマホで使う",
-    integration: "他のサービスとつなぐ", infra: "公開後も止めずに動かす", qa: "正しく動くか確かめる",
-    management: "導入して使い続ける",
+    planning: "企画・要件の整理", frontend: "利用者が操作する画面", backend: "業務処理・計算の自動化",
+    data: "データの保存と検索", security: "ログインと権限の管理", mobile: "スマートフォン・写真の活用",
+    integration: "他サービスとの連携", infra: "公開と安定運用", qa: "動作確認と品質保証",
+    management: "導入支援と保守",
   };
 
   const plainNames = {
-    "requirements": "やりたいことと対象範囲を整理する", "domain-research": "業界ルールや法律を確認する",
-    "architecture": "全体の作り方を決める", "information-architecture": "画面とメニューの並びを決める",
-    "wireframes": "画面の下書きを作る", "design-system": "色・文字・ボタンの見た目をそろえる",
-    "responsive-shell": "パソコンとスマホの両方で使う", "list-detail-ui": "情報を一覧で見て詳細を開く",
-    "form-ui": "画面から情報を入力・修正する", "advanced-search-ui": "条件を指定して情報を探す",
-    "dashboard-ui": "状況をひと目で確認する", "charts-ui": "数字をグラフで見る",
-    "calendar-ui": "予定をカレンダーで見る", "rich-editor-ui": "写真や表を含む文章を作る",
-    "customer-portal-ui": "お客様・協力会社専用の画面を用意する", "admin-ui": "管理者だけが使う設定画面を用意する",
-    "accessibility-ui": "見やすさ・操作しやすさに配慮する", "i18n-ui": "複数の言語で使う",
-    "theme-ui": "会社ごとにロゴや色を変える", "api-foundation": "画面と保存した情報をつなぐ",
-    "business-rules": "金額・期限・判定を自動計算する", "workflow-engine": "下書き・確認中・完了を管理する",
-    "approval-flow": "申請・承認・差戻しを行う", "notification-center": "アプリ内でお知らせを受け取る",
-    "estimate-invoice": "見積・請求・税・値引きを計算する", "booking-flow": "予約・変更・キャンセルを受け付ける",
-    "product-catalog": "商品・サービスと価格を登録する", "inventory": "在庫の増減と残数を管理する",
-    "ecommerce": "商品を選び注文する", "subscription": "月額・年額で継続課金する",
-    "crm": "顧客・案件・対応履歴をまとめる", "report-generator": "登録内容から報告書を作る",
-    "pdf-generator": "見積書や報告書をPDFにする", "scheduled-jobs": "決まった時刻に通知・集計する",
-    "import-export": "Excel・CSVを取り込む・書き出す", "db-foundation": "入力した情報を保存する",
-    "schema-design": "保存する項目と関係を決める", "master-data": "分類・単価・選択肢を後から変更する",
-    "history-versioning": "変更前の内容と変更者を残す", "file-storage": "写真・文書を安全に保管する",
-    "search-index": "大量の文章から素早く探す", "analytics-store": "集計用の情報をためる",
-    "backup-restore": "消えた情報を戻せるようにする", "data-migration": "今使っているデータを移す",
-    "security-baseline": "安全に使うための基本ルールを決める", "user-accounts": "利用者を登録・停止する",
-    "session-security": "ログイン状態を安全に保つ", "email-login": "メールアドレスでログインする",
-    "social-login": "Googleなどのアカウントでログインする", "mfa": "確認コードで本人確認を強める",
-    "role-permissions": "役割ごとに見える情報を変える", "organization-tenancy": "会社ごとに情報を分ける",
-    "external-portal-access": "社外の人には関係する情報だけ見せる", "audit-log": "重要な操作の記録を残す",
-    "security-review": "外部の目で安全性を確認する", "file-upload": "文書や写真を添付する",
-    "image-upload": "複数の写真を選び並べ替える", "image-processing": "写真を自動で軽く・見やすくする",
-    "camera-capture": "その場で写真を撮って登録する", "video-upload": "動画を添付して再生する",
-    "pwa": "ホーム画面からアプリのように開く", "offline-sync": "通信がなくても入力し、後で送る",
-    "native-app": "アプリストアで配布する", "push-notification": "スマホへ通知を出す",
-    "geolocation": "現在地・住所・地図を使う", "external-api": "他サービスと情報をやり取りする準備をする",
-    "webhooks": "他サービスの更新をすぐ受け取る", "email-integration": "メールを自動送信する",
-    "sms-integration": "SMSを自動送信する", "messaging-integration": "普段使うチャットへ通知する",
-    "payment-integration": "クレジットカード等で支払う", "accounting-integration": "会計ソフトへ請求・入金を渡す",
-    "maps-integration": "住所検索・地図・経路を使う", "calendar-integration": "外部カレンダーと予定を合わせる",
-    "esign-integration": "契約書を送り電子署名してもらう", "web-deploy": "インターネット上で使えるように公開する",
-    "staging": "公開前にお客様が確認する場所を用意する", "cicd": "更新版を安全に公開する",
-    "monitoring": "停止や遅れを見つけて知らせる", "error-tracking": "エラーの原因を追えるようにする",
-    "cdn": "写真やファイルを速く表示する", "queue-worker": "時間がかかる処理を順番に実行する",
-    "scalable-infra": "利用者が増えても動くようにする", "disaster-recovery": "障害が起きても決めた時間で復旧する",
-    "unit-tests": "計算や入力チェックを自動で確かめる", "integration-tests": "画面から保存まで正しくつながるか確かめる",
-    "e2e-tests": "実際の操作手順を自動で確かめる", "qa-baseline": "基本的な動作確認を一通り行う",
-    "performance-tests": "大勢で使っても遅くならないか確かめる", "accessibility-tests": "見やすさ・操作しやすさを確かめる",
-    "security-tests": "不正な操作や設定漏れがないか確かめる", "uat-support": "お客様の確認作業を支援する",
-    "project-management": "進み具合・課題・変更を管理する", "documentation-training": "操作説明とマニュアルを用意する",
-    "release-management": "公開する版と切戻し手順を管理する", "support-operation": "公開後の問い合わせ・障害に対応する",
+    "requirements": "目的・利用者・対象範囲の整理", "domain-research": "業界ルール・法令の調査",
+    "architecture": "画面・データ・外部連携の全体設計", "information-architecture": "画面構成とメニューの設計",
+    "wireframes": "主要画面のレイアウト案の作成", "design-system": "画面デザインの共通ルール整備",
+    "responsive-shell": "パソコン・スマートフォン両対応", "list-detail-ui": "データの一覧表示と詳細画面",
+    "form-ui": "データの入力・修正画面", "advanced-search-ui": "条件を指定したデータ検索",
+    "dashboard-ui": "主要な数値・状況の一覧画面", "charts-ui": "数値のグラフ表示",
+    "calendar-ui": "予定・期限のカレンダー表示", "rich-editor-ui": "画像・表を含む文書の作成",
+    "customer-portal-ui": "取引先向けの専用画面", "admin-ui": "運営者向けの設定・管理画面",
+    "accessibility-ui": "高齢者・障がいのある方にも配慮した画面", "i18n-ui": "日本語以外の言語での表示",
+    "theme-ui": "会社ごとのロゴ・配色の切替", "api-foundation": "画面とデータをつなぐ共通の仕組み",
+    "business-rules": "金額・期限・判定の自動計算", "workflow-engine": "下書き・確認中・完了の進捗管理",
+    "approval-flow": "申請・承認・差戻しの処理", "notification-center": "アプリ内のお知らせ配信",
+    "estimate-invoice": "見積書・請求書の金額計算", "booking-flow": "予約・変更・キャンセルの受付",
+    "product-catalog": "商品・サービスと価格の登録", "inventory": "在庫の入出庫と残数管理",
+    "ecommerce": "商品選択から注文までの手続き", "subscription": "月額・年額の継続課金",
+    "crm": "取引先・案件・対応履歴の一元管理", "report-generator": "登録内容からの報告書作成",
+    "pdf-generator": "見積書・報告書のPDF化", "scheduled-jobs": "決まった時刻の自動通知・集計",
+    "import-export": "Excel・CSVの取り込みと書き出し", "db-foundation": "入力データを保存する仕組み",
+    "schema-design": "保存する項目とその関係の設計", "master-data": "分類・単価・選択肢の設定変更",
+    "history-versioning": "変更前の内容と変更者の記録", "file-storage": "写真・文書の安全な保管",
+    "search-index": "大量の文書からの高速検索", "analytics-store": "集計・分析用データの蓄積",
+    "backup-restore": "データの定期保存と復元", "data-migration": "既存データの移行",
+    "security-baseline": "安全に使うための基本的な対策", "user-accounts": "利用者の登録・停止の管理",
+    "session-security": "ログイン状態の安全な保持", "email-login": "メールアドレスでのログイン",
+    "social-login": "Googleアカウントなどでのログイン", "mfa": "確認コードによる本人確認の強化",
+    "role-permissions": "役割ごとの閲覧範囲の設定", "organization-tenancy": "会社ごとのデータ分離",
+    "external-portal-access": "社外の関係者への限定公開", "audit-log": "重要な操作の記録保存",
+    "security-review": "第三者による安全性の確認", "file-upload": "文書・写真の添付",
+    "image-upload": "複数写真の選択と並べ替え", "image-processing": "写真の自動圧縮と縮小表示",
+    "camera-capture": "その場での写真撮影と登録", "video-upload": "動画の添付と再生",
+    "pwa": "ホーム画面からのアプリ起動", "offline-sync": "通信がない場所での入力と後からの送信",
+    "native-app": "アプリストアでの配布", "push-notification": "スマートフォンへの通知",
+    "geolocation": "現在地・住所・地図の利用", "external-api": "他サービスと連携するための基盤",
+    "webhooks": "他サービスの変更通知の受信", "email-integration": "メールの自動送信",
+    "sms-integration": "SMSの自動送信", "messaging-integration": "社内チャットへの通知",
+    "payment-integration": "クレジットカードなどでの支払い", "accounting-integration": "会計ソフトへの請求・入金連携",
+    "maps-integration": "住所検索・地図・経路案内", "calendar-integration": "外部カレンダーとの予定同期",
+    "esign-integration": "契約書の送付と電子署名", "web-deploy": "インターネット公開の環境構築",
+    "staging": "公開前の確認用環境", "cicd": "更新版の安全な公開手順",
+    "monitoring": "停止・遅延の検知と通知", "error-tracking": "エラー原因の追跡環境",
+    "cdn": "写真・ファイルの高速表示", "queue-worker": "時間のかかる処理を順に実行する仕組み",
+    "scalable-infra": "利用者増加に備えた構成強化", "disaster-recovery": "障害発生時の復旧体制",
+    "unit-tests": "計算・入力内容の自動確認", "integration-tests": "画面から保存までの連携確認",
+    "e2e-tests": "実際の操作手順の自動確認", "qa-baseline": "基本的な動作確認一式",
+    "performance-tests": "多人数利用時の速度確認", "accessibility-tests": "見やすさ・操作性の確認",
+    "security-tests": "不正操作・設定漏れの確認", "uat-support": "顧客の確認作業の支援",
+    "project-management": "進捗・課題・変更の管理", "documentation-training": "操作マニュアルの作成と説明会",
+    "release-management": "公開の判定と切戻し手順の管理", "support-operation": "公開後の問い合わせ・障害対応",
   };
 
   features.forEach((feature) => { feature.plainName = plainNames[feature.id] || feature.name; });
@@ -418,50 +418,50 @@
   // 見積画面の操作用ツリー。技術的な必須依存（features.dependencies）とは分離する。
   // 親を外すと配下を一括解除でき、末端機能は個別に増減できる。
   const featureHierarchy = [
-    { id: "planning", name: "何を作るか決める", groups: [
-      { id: "planning-research", name: "目的・範囲・ルールを整理する", features: ["requirements", "domain-research"] },
-      { id: "planning-design", name: "画面と全体の形を決める", features: ["architecture", "information-architecture", "wireframes", "design-system"] },
+    { id: "planning", name: "企画・要件の整理", groups: [
+      { id: "planning-research", name: "目的・対象範囲の整理", features: ["requirements", "domain-research"] },
+      { id: "planning-design", name: "全体構成と画面設計", features: ["architecture", "information-architecture", "wireframes", "design-system"] },
     ] },
-    { id: "frontend", name: "利用者が見る・入力する", groups: [
-      { id: "frontend-basic", name: "情報を見て入力・検索する", features: ["responsive-shell", "list-detail-ui", "form-ui", "advanced-search-ui"] },
-      { id: "frontend-visual", name: "状況・予定・文章を見やすくする", features: ["dashboard-ui", "charts-ui", "calendar-ui", "rich-editor-ui"] },
-      { id: "frontend-portal", name: "利用者ごとの専用画面を用意する", features: ["customer-portal-ui", "admin-ui"] },
-      { id: "frontend-coverage", name: "より多くの人・会社で使えるようにする", features: ["accessibility-ui", "i18n-ui", "theme-ui"] },
+    { id: "frontend", name: "利用者が操作する画面", groups: [
+      { id: "frontend-basic", name: "表示・入力・検索の基本画面", features: ["responsive-shell", "list-detail-ui", "form-ui", "advanced-search-ui"] },
+      { id: "frontend-visual", name: "状況・予定・文書の表示", features: ["dashboard-ui", "charts-ui", "calendar-ui", "rich-editor-ui"] },
+      { id: "frontend-portal", name: "利用者別の専用画面", features: ["customer-portal-ui", "admin-ui"] },
+      { id: "frontend-coverage", name: "利用者・企業ごとの対応拡大", features: ["accessibility-ui", "i18n-ui", "theme-ui"] },
     ] },
-    { id: "backend", name: "仕事の流れや計算を動かす", groups: [
-      { id: "backend-core", name: "計算・進み具合・承認を自動化する", features: ["api-foundation", "business-rules", "workflow-engine", "approval-flow", "notification-center"] },
-      { id: "backend-transaction", name: "予約・販売・顧客対応を管理する", features: ["estimate-invoice", "booking-flow", "product-catalog", "inventory", "ecommerce", "subscription", "crm"] },
-      { id: "backend-output", name: "書類・集計・データ入出力を自動化する", features: ["report-generator", "pdf-generator", "scheduled-jobs", "import-export"] },
+    { id: "backend", name: "業務処理・計算の自動化", groups: [
+      { id: "backend-core", name: "計算・進捗・承認の自動化", features: ["api-foundation", "business-rules", "workflow-engine", "approval-flow", "notification-center"] },
+      { id: "backend-transaction", name: "予約・販売・取引先対応の管理", features: ["estimate-invoice", "booking-flow", "product-catalog", "inventory", "ecommerce", "subscription", "crm"] },
+      { id: "backend-output", name: "書類・集計・データ入出力", features: ["report-generator", "pdf-generator", "scheduled-jobs", "import-export"] },
     ] },
-    { id: "data", name: "情報を保存・探す", groups: [
-      { id: "data-core", name: "入力した情報と変更履歴を残す", features: ["db-foundation", "schema-design", "master-data", "history-versioning"] },
-      { id: "data-search", name: "写真・文書・集計情報を保管して探す", features: ["file-storage", "search-index", "analytics-store"] },
-      { id: "data-operation", name: "今のデータを移し、消えても戻せるようにする", features: ["backup-restore", "data-migration"] },
+    { id: "data", name: "データの保存と検索", groups: [
+      { id: "data-core", name: "データと変更履歴の保存", features: ["db-foundation", "schema-design", "master-data", "history-versioning"] },
+      { id: "data-search", name: "写真・文書・集計データの保管と検索", features: ["file-storage", "search-index", "analytics-store"] },
+      { id: "data-operation", name: "データ移行とバックアップ", features: ["backup-restore", "data-migration"] },
     ] },
-    { id: "security", name: "安全にログイン・使い分ける", groups: [
-      { id: "security-login", name: "利用者を登録して本人確認する", features: ["security-baseline", "user-accounts", "session-security", "email-login", "social-login", "mfa"] },
-      { id: "security-access", name: "人・役割・会社ごとに見せる範囲を変える", features: ["role-permissions", "organization-tenancy", "external-portal-access"] },
-      { id: "security-audit", name: "重要な操作を残し、安全性を確認する", features: ["audit-log", "security-review"] },
+    { id: "security", name: "ログインと権限の管理", groups: [
+      { id: "security-login", name: "利用者登録と本人確認", features: ["security-baseline", "user-accounts", "session-security", "email-login", "social-login", "mfa"] },
+      { id: "security-access", name: "役割・組織ごとの公開範囲", features: ["role-permissions", "organization-tenancy", "external-portal-access"] },
+      { id: "security-audit", name: "操作記録と安全性の確認", features: ["audit-log", "security-review"] },
     ] },
-    { id: "mobile", name: "現場やスマホで使う", groups: [
-      { id: "mobile-file", name: "文書・写真・動画を登録する", features: ["file-upload", "image-upload", "image-processing", "camera-capture", "video-upload"] },
-      { id: "mobile-app", name: "屋外や移動中でも使えるようにする", features: ["pwa", "offline-sync", "native-app", "push-notification", "geolocation"] },
+    { id: "mobile", name: "スマートフォン・写真の活用", groups: [
+      { id: "mobile-file", name: "文書・写真・動画の登録", features: ["file-upload", "image-upload", "image-processing", "camera-capture", "video-upload"] },
+      { id: "mobile-app", name: "屋外・移動中での利用", features: ["pwa", "offline-sync", "native-app", "push-notification", "geolocation"] },
     ] },
-    { id: "integration", name: "他のサービスとつなぐ", groups: [
-      { id: "integration-core", name: "メール・SMS・チャットで知らせる", features: ["external-api", "webhooks", "email-integration", "sms-integration", "messaging-integration"] },
-      { id: "integration-business", name: "決済・会計・地図・契約とつなぐ", features: ["payment-integration", "accounting-integration", "maps-integration", "calendar-integration", "esign-integration"] },
+    { id: "integration", name: "他サービスとの連携", groups: [
+      { id: "integration-core", name: "メール・SMS・チャットでの通知", features: ["external-api", "webhooks", "email-integration", "sms-integration", "messaging-integration"] },
+      { id: "integration-business", name: "決済・会計・地図・契約の連携", features: ["payment-integration", "accounting-integration", "maps-integration", "calendar-integration", "esign-integration"] },
     ] },
-    { id: "infra", name: "公開後も止めずに動かす", groups: [
-      { id: "infra-release", name: "確認してから安全に公開する", features: ["web-deploy", "staging", "cicd"] },
-      { id: "infra-operation", name: "停止・エラー・重い処理に対応する", features: ["monitoring", "error-tracking", "queue-worker"] },
-      { id: "infra-scale", name: "利用増加や障害に備える", features: ["cdn", "scalable-infra", "disaster-recovery"] },
+    { id: "infra", name: "公開と安定運用", groups: [
+      { id: "infra-release", name: "確認と安全な公開", features: ["web-deploy", "staging", "cicd"] },
+      { id: "infra-operation", name: "停止・エラー・重い処理への対応", features: ["monitoring", "error-tracking", "queue-worker"] },
+      { id: "infra-scale", name: "利用増加と障害への備え", features: ["cdn", "scalable-infra", "disaster-recovery"] },
     ] },
-    { id: "qa", name: "正しく動くか確かめる", groups: [
-      { id: "qa-standard", name: "基本的な操作と計算を確かめる", features: ["unit-tests", "integration-tests", "e2e-tests", "qa-baseline"] },
-      { id: "qa-special", name: "速度・安全性・使いやすさを確かめる", features: ["performance-tests", "accessibility-tests", "security-tests", "uat-support"] },
+    { id: "qa", name: "動作確認と品質保証", groups: [
+      { id: "qa-standard", name: "基本動作と計算の確認", features: ["unit-tests", "integration-tests", "e2e-tests", "qa-baseline"] },
+      { id: "qa-special", name: "速度・安全性・使いやすさの確認", features: ["performance-tests", "accessibility-tests", "security-tests", "uat-support"] },
     ] },
-    { id: "management", name: "導入して使い続ける", groups: [
-      { id: "management-delivery", name: "進行・説明・公開後の対応を行う", features: ["project-management", "documentation-training", "release-management", "support-operation"] },
+    { id: "management", name: "導入支援と保守", groups: [
+      { id: "management-delivery", name: "進行管理・説明・公開後の対応", features: ["project-management", "documentation-training", "release-management", "support-operation"] },
     ] },
   ];
 

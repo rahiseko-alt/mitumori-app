@@ -173,10 +173,10 @@
       if (selected.has(feature.id) && includedByBundle.has(feature.id)) {
         appliedPrice = 0;
         adjustedBy = includedByBundle.get(feature.id);
-        adjustmentReason = "上位の一式価格に内包";
+        adjustmentReason = "上位項目の一式価格に含む";
       } else if (selected.has(feature.id) && !direct.has(feature.id) && Number.isFinite(Number(feature.dependencyPrice))) {
         appliedPrice = Math.max(0, Number(feature.dependencyPrice));
-        adjustmentReason = "自動追加時の共通基盤配賦";
+        adjustmentReason = "共通基盤として按分";
       }
 
       pricingInfo.set(feature.id, { standalonePrice, appliedPrice, adjustmentReason, adjustedBy });

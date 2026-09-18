@@ -12,7 +12,7 @@
     <div>
       <p class="eyebrow">非エンジニア向け・商談支援</p>
       <h1>開発見積ナビ</h1>
-      <p class="subtitle">やりたいことをチェックすると、必要な作業と概算費用がその場で出ます。</p>
+      <p class="subtitle">必要な機能を選ぶと、作業内容と概算費用がその場で表示されます。</p>
     </div>
     <div class="header-fields">
       <label>
@@ -24,7 +24,7 @@
         <output class="fixed-field">中小規模システム会社</output>
       </label>
       <label>
-        <span>商談相手名（印刷用・任意）</span>
+        <span>顧客名（印刷用・任意）</span>
         <input id="customer-name" type="text" maxlength="80" placeholder="例：株式会社〇〇">
       </label>
       <label>
@@ -33,7 +33,7 @@
       </label>
       <label class="persistence-toggle">
         <input id="auto-save" type="checkbox">
-        <span><strong>この端末に自動保存</strong><small>共有PCではオフのまま使用してください。案件保存はJSONをダウンロードします。</small></span>
+        <span><strong>この端末に自動保存</strong><small>共有パソコンではオフのままご使用ください。案件の保存はファイルのダウンロードで行います。</small></span>
       </label>
     </div>
   </header>
@@ -48,14 +48,14 @@
         <div class="sticky-total-amount">
           <span id="sticky-summary-count">0項目</span>
           <strong id="sticky-summary-cost">￥0</strong>
-          <small id="sticky-summary-note">参考概算・消費税別／年間保守別途</small>
+          <small id="sticky-summary-note">概算・消費税別／年間保守費は別途</small>
         </div>
       </section>
 
       <div class="phase-intro">
         <div>
           
-          <h2 id="estimate-heading">やりたいことをチェックして見積を作る</h2>
+          <h2 id="estimate-heading">必要な機能を選んで見積を作る</h2>
           <p>チェックの変更はその場で金額へ反映されます。表示金額は参考概算・消費税別です。上のまとまりを外すと、その下もまとめて外れます。</p>
         </div>
         <div class="action-row">
@@ -68,10 +68,10 @@
       </div>
 
       <section class="summary-grid" aria-label="見積概要" aria-live="polite">
-        <article><span>見積に含む項目</span><strong id="summary-count">0件</strong><small id="summary-count-detail">選択0・一緒に必要0</small></article>
-        <article><span>参考作業時間</span><strong id="summary-hours">0時間</strong><small id="summary-months">価格には反映しない参考値</small></article>
-        <article><span>相対参考単価合計（消費税別）</span><strong id="summary-cost">￥0</strong><small id="summary-price-note">原本単価と査定単価の合計</small></article>
-        <article><span>想定期間</span><strong id="summary-duration">0か月</strong><small id="summary-team">体制換算</small></article>
+        <article><span>見積に含む項目</span><strong id="summary-count">0件</strong><small id="summary-count-detail">選択0・自動追加0</small></article>
+        <article><span>参考作業時間</span><strong id="summary-hours">0時間</strong><small id="summary-months">金額の算出には使用していません</small></article>
+        <article><span>概算金額（消費税別）</span><strong id="summary-cost">￥0</strong><small id="summary-price-note">価格表対応分と査定分の合計</small></article>
+        <article><span>想定期間</span><strong id="summary-duration">0か月</strong><small id="summary-team">3〜4名で並行作業した場合</small></article>
       </section>
 
       <section id="pricing-review-warning" class="pricing-review-warning" aria-live="polite" hidden>
@@ -80,8 +80,8 @@
 
       <section class="difficulty-scale" aria-labelledby="difficulty-scale-heading">
         <div>
-          <p class="step">金額とは別の比較軸</p>
-          <h3 id="difficulty-scale-heading">難易度指数（価格は変更しません）</h3>
+          <p class="step">金額とは別の比較指標</p>
+          <h3 id="difficulty-scale-heading">難易度の目安（金額には影響しません）</h3>
           <p>通常APPで基本になる要件定義・情報設計・ワイヤー等を指数1とし、状態数、整合性、外部連携、失敗時の影響が増えるほど指数を上げます。</p>
         </div>
         <ol>
@@ -89,16 +89,16 @@
           <li><strong>指数2</strong><span>標準</span></li>
           <li><strong>指数3</strong><span>高度</span></li>
           <li><strong>指数4</strong><span>複雑</span></li>
-          <li><strong>指数5</strong><span>最難</span></li>
+          <li><strong>指数5</strong><span>最高難度</span></li>
         </ol>
-        <small>この指数は比較・説明用です。現在の固定単価、原本単価、査定単価のいずれも変更しません。</small>
+        <small>この指標は説明・比較のためのもので、金額には一切影響しません。</small>
       </section>
 
       <section class="print-document-meta" aria-label="見積書情報">
         <h2>開発費用 参考概算書</h2>
         <dl>
           <div><dt>案件名</dt><dd id="print-project-name">—</dd></div>
-          <div><dt>商談相手名</dt><dd id="print-customer-name">—</dd></div>
+          <div><dt>宛先</dt><dd id="print-customer-name">—</dd></div>
           <div><dt>発行者</dt><dd id="print-issuer-name">—</dd></div>
           <div><dt>見積番号</dt><dd id="print-estimate-number">—</dd></div>
           <div><dt>作成日</dt><dd id="print-created-at">—</dd></div>
@@ -108,19 +108,19 @@
       </section>
 
       <section id="impact-panel" class="impact-panel" aria-live="polite">
-        <strong>やりたいことのチェックを変更してください。</strong>
-        <span>追加・削減される金額と、一緒に必要になる作業を表示します。</span>
+        <strong>機能の選択を変更してください。</strong>
+        <span>増減する金額と、同時に必要になる作業を表示します。</span>
       </section>
 
       <section class="tree-guide">
-        <div><span class="tree-symbol selectable">✓</span><strong>選べる項目</strong><small>チェックで見積へ追加・解除</small></div>
-        <div><span class="tree-symbol mandatory">🔒</span><strong>必須固定</strong><small>標準APP開発で常に発生する工程</small></div>
-        <div><span class="tree-symbol locked">🔒</span><strong>一緒に必要</strong><small>選んだ項目に必要な間は自動で残る</small></div>
-        <div><span class="tree-symbol shared">●</span><strong>他でも使用</strong><small>複数箇所で使っても一度だけ計上</small></div>
+        <div><span class="tree-symbol selectable">✓</span><strong>選択できる項目</strong><small>チェックを入れると見積に追加されます</small></div>
+        <div><span class="tree-symbol mandatory">🔒</span><strong>必須項目</strong><small>どの案件でも必ず発生する工程</small></div>
+        <div><span class="tree-symbol locked">🔒</span><strong>自動追加</strong><small>選んだ項目に必要なため自動で含まれます</small></div>
+        <div><span class="tree-symbol shared">●</span><strong>共通項目</strong><small>複数の機能で使う場合も1回のみ計上</small></div>
       </section>
 
       <div class="feature-toolbar">
-        <label><span>やりたいことを検索</span><input id="feature-search" type="search" placeholder="例：写真、承認、PDF"></label>
+        <label><span>機能名で検索</span><input id="feature-search" type="search" placeholder="例：写真、承認、PDF"></label>
         <label class="toggle-label"><input id="selected-only" type="checkbox"><span>選択中だけ表示</span></label>
         <button id="open-custom-dialog" type="button" class="primary">この案件だけの項目を追加</button>
       </div>
@@ -128,7 +128,7 @@
       <div class="estimate-workspace">
         <section class="function-tree-panel" aria-labelledby="function-tree-heading">
           <div class="panel-heading">
-            <div><p class="step">チェック操作</p><h3 id="function-tree-heading">やりたいこと別見積ツリー</h3></div>
+            <div><p class="step">チェック操作</p><h3 id="function-tree-heading">機能別の見積ツリー</h3></div>
             <small>大きなまとまり → 個別項目</small>
           </div>
           <div id="feature-tree" class="feature-tree"></div>
@@ -136,9 +136,9 @@
 
         <aside class="dependency-inspector" aria-labelledby="dependency-heading">
           <div class="panel-heading">
-            <div><p class="step">自動で追加</p><h3 id="dependency-heading">一緒に必要になる準備</h3></div>
+            <div><p class="step">自動で追加</p><h3 id="dependency-heading">同時に必要になる項目</h3></div>
           </div>
-          <p id="dependency-help">上の項目名を押すと、実現するために一緒に必要になる準備を表示します。</p>
+          <p id="dependency-help">上の項目名を押すと、実現するために同時に必要となる項目を表示します。</p>
           <div id="dependency-tree" class="dependency-tree"></div>
           <div id="reverse-dependencies" class="reverse-dependencies"></div>
         </aside>
@@ -154,8 +154,8 @@
         <p class="table-note">作業時間は期間検討用の参考値です。価格は工数計算ではなく、下表の機能別固定単価を使用します。</p>
         <div class="table-wrap"><table id="role-table"><caption class="sr-only">担当作業別の参考工数</caption><thead><tr><th>作業</th><th>時間</th></tr></thead><tbody></tbody></table></div>
 
-        <h3>機能別価格マスタ明細</h3>
-        <p class="table-note">原本対応34項目と査定62項目を基準値とし、提示価格は基準値へ一律の縮小率を掛けて5,000円単位に丸めた値です。項目ごとの個別値引きはしていません。難易度指数は金額を変更しない、説明・比較用の別指標です。</p>
+        <h3>項目別の単価明細</h3>
+        <p class="table-note">価格表に対応する34項目と、規模・難易度・再利用性から査定した62項目を基準値とし、見積単価は基準値に一律の調整率を掛けて5,000円単位に丸めた金額です。項目ごとの個別値引きは行っていません。難易度指数は金額を変更しない、説明・比較用の別指標です。</p>
         <div class="table-wrap"><table id="feature-table"><caption class="sr-only">機能別固定単価の明細（消費税別）</caption><thead><tr><th>項目番号</th><th>状態</th><th>分類</th><th>見積項目</th><th>価格表の対応項目</th><th>難易度指数</th><th>規模</th><th>参考工数</th><th>固定単価（税別）</th></tr></thead><tbody></tbody></table></div>
       </details>
 
@@ -166,7 +166,7 @@
 
   <footer>
     <button id="reset-project" type="button" class="danger">案件を初期化</button>
-    <p>表示金額は、原本単価と補完査定単価を基準値として一律の縮小率を掛けた、消費税別の参考概算です。市場総額や正式見積ではありません。年間保守費は合計の10%前後を目安に別途計上します。</p>
+    <p>表示金額は、価格表対応分と査定分を基準値として一律の調整率を掛けた、消費税別の参考概算です。市場相場や正式見積ではありません。年間保守費は合計の10%前後を目安に別途計上します。</p>
   </footer>
 
   <dialog id="custom-dialog">
@@ -176,15 +176,15 @@
         <button type="button" id="close-custom-dialog" class="icon-button" aria-label="閉じる">×</button>
       </div>
       <div class="custom-grid">
-        <label><span>やりたいこと</span><input id="custom-name" required maxlength="80" placeholder="例：現場ごとに独自の点検表を作りたい"></label>
+        <label><span>項目名</span><input id="custom-name" required maxlength="80" placeholder="例：現場ごとの独自点検表の作成"></label>
         <label><span>分類</span><select id="custom-layer"></select></label>
-        <label><span>相場ベースの一般単価（税別）</span><input id="custom-price" type="number" min="0" step="10000" value="0"><small id="custom-price-converted">提示価格 ￥0（カタログと同じ縮小率を掛けます）</small></label>
+        <label><span>一般的な相場金額（消費税別）</span><input id="custom-price" type="number" min="0" step="10000" value="0"><small id="custom-price-converted">見積単価 ￥0</small></label>
         <label><span>規模</span><select id="custom-price-size"><option value="—">未設定</option><option value="S">S（小）</option><option value="M">M（中）</option><option value="L">L（大）</option></select></label>
         <label class="wide"><span>説明</span><textarea id="custom-description" rows="2" maxlength="240"></textarea></label>
       </div>
       <fieldset><legend>この項目にかかる作業時間（担当ごと）</legend><div id="custom-hours" class="hours-grid"></div></fieldset>
       <fieldset>
-        <legend>一緒に必要になる項目</legend>
+        <legend>同時に必要になる項目</legend>
         <input id="custom-dependency-search" type="search" placeholder="項目名を検索">
         <div id="custom-dependencies" class="dependency-picker"></div>
       </fieldset>
