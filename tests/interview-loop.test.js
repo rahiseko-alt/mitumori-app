@@ -23,10 +23,18 @@ for (const [name, text] of [["SKILL.md", SKILL], ["貼る指示", PASTE]]) {
     assert.ok(text.includes("ヒアリングではない"), "宿題とヒアリングの区別がない");
   });
 
-  test(name + "：1回3問、推奨案と金額つきという形が決まっている", () => {
-    assert.ok(text.includes("1回につき3問"), "1回に出す問数が決まっていない");
-    assert.ok(text.includes("推奨案と金額を添える"), "推奨案と金額の決まりがない");
+  test(name + "：1回3問、そのまま読み上げられる形が決まっている", () => {
+    assert.ok(text.includes("1回に3問"), "1回に出す問数が決まっていない");
     assert.ok(text.includes("そのまま読み上げられる形"), "営業が読み上げる前提が書かれていない");
+  });
+
+  test(name + "：質問をボタンで出すことが既定の動作になっている", () => {
+    assert.ok(text.includes("質問は必ずボタンで出す"), "ボタンで出す決まりがない");
+    assert.ok(text.includes("これが既定の動作である"), "ボタンが既定だと書かれていない");
+    assert.ok(text.includes("選択肢を文章に並べて"), "文章で並べることへの歯止めがない");
+    assert.ok(text.includes("選択肢は4つまで"), "ボタンの選択肢数の制約が書かれていない");
+    assert.ok(text.includes("「分からない・持ち帰る」を必ず選べる"), "分からないを選べる決まりがない");
+    assert.ok(text.includes("選択肢の説明に金額を入れる"), "金額をどこに置くかが書かれていない");
   });
 
   test(name + "：文書を出すのはヒアリングのあとだと決まっている", () => {
