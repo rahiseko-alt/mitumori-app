@@ -23,9 +23,10 @@ for (const [name, text] of [["SKILL.md", SKILL], ["貼る指示", PASTE]]) {
     assert.ok(text.includes("ヒアリングではない"), "宿題とヒアリングの区別がない");
   });
 
-  test(name + "：1回3問、そのまま読み上げられる形が決まっている", () => {
+  test(name + "：1回3問、営業がそのまま読める文だと決まっている", () => {
     assert.ok(text.includes("1回に3問"), "1回に出す問数が決まっていない");
-    assert.ok(text.includes("そのまま読み上げられる形"), "営業が読み上げる前提が書かれていない");
+    assert.ok(text.includes("言い換える必要がある文は失格"),
+      "営業がそのまま読める文である、という基準が書かれていない");
   });
 
   test(name + "：質問をボタンで出すことが既定の動作になっている", () => {
@@ -48,6 +49,22 @@ for (const [name, text] of [["SKILL.md", SKILL], ["貼る指示", PASTE]]) {
     assert.ok(text.includes("形式を指定して突き返さない") || text.includes("入力の形式を指定して突き返す"),
       "形式を求めて突き返すことへの歯止めがない");
     assert.ok(text.includes("待たずに段階3へ進む"), "合図を待たずに始める決まりがない");
+  });
+
+  test(name + "：聞く前に論点を仕分けると決まっている", () => {
+    assert.ok(text.includes("聞く前に、自分で答える"), "仕分けの節がない");
+    assert.ok(text.includes("要望から答えの分かる論点を、顧客に聞いてはいけない"),
+      "分かることを聞かない決まりがない");
+    assert.ok(text.includes("当てはまらない論点を、幅が大きいからという理由で聞かない"),
+      "金額順が聞くかどうかを決めない、と書かれていない");
+    assert.ok(text.includes("仮置きは必ず安い側に寄せる"), "仮置きの寄せ方が決まっていない");
+    assert.ok(text.includes("仮置きしたこと"), "仮置きを見せる決まりが段階3にない");
+  });
+
+  test(name + "：論点表の文言をそのまま読ませないと決まっている", () => {
+    assert.ok(text.includes("案件の言葉に書き直す"), "質問文を書き直す決まりがない");
+    assert.ok(text.includes("記号や注記を入れない"), "顧客向けの文に注記を入れない決まりがない");
+    assert.ok(text.includes("選択肢を変えて同じ論点を出し直さない"), "出し直しへの歯止めがない");
   });
 
   test(name + "：文書を出すのはヒアリングのあとだと決まっている", () => {
